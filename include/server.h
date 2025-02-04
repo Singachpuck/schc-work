@@ -1,0 +1,6 @@
+#ifndef SCHC_WORK_SERVER_H
+#define SCHC_WORK_SERVER_H
+
+
+
+#endif //SCHC_WORK_SERVER_H
