@@ -1,0 +1,3 @@
+set(FRAGMENTATION_API "p2p")
+set(TEMPLATE_ID "ipv4udp")
+set(TRACE_ENABLED ON)
