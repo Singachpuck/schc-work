@@ -1,3 +1,4 @@
-[submodule "thirdparty/schc/full-sdk-delivery"]
-	path = thirdparty/schc/full-sdk-delivery
+[submodule "schc/full-sdk-delivery"]
+	path = schc/full-sdk-delivery
 	url = https://gitlab.com/lab-schc/sdk/full-sdk-delivery.git
+	branch = dochkas/tmp_wakaama_fix
