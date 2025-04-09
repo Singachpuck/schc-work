@@ -1,4 +1,8 @@
-function(add_git_submodule dir)
+function(add_git_submodule dir PROPAGATE)
+    if (NOT DEFINED PROPAGATE)
+        option(PROPAGATE "Add cloned project as cmake submodule" ON)
+    endif ()
+
     find_package(Git REQUIRED)
 
     if (NOT EXISTS ${CMAKE_SOURCE_DIR}/${dir}/CMakeLists.txt)
@@ -6,5 +10,9 @@ function(add_git_submodule dir)
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
     endif ()
 
-    add_subdirectory(${dir})
+    message(STATUS "SCHC Full SDK is available at ${dir}")
+
+    if (PROPAGATE)
+        add_subdirectory(${dir})
+    endif ()
 endfunction()

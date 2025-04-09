@@ -1,0 +1,1 @@
+configure_file(schc_sdk_params.h.in ${DELIVERY_DIR}/schc_sdk_params.h)
