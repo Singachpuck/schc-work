@@ -5,14 +5,17 @@ function(add_git_submodule dir PROPAGATE)
 
     find_package(Git REQUIRED)
 
-    if (NOT EXISTS ${CMAKE_SOURCE_DIR}/${dir}/CMakeLists.txt)
-        execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive -- ${CMAKE_SOURCE_DIR}/${dir}
+    set(FULL_DIR ${CMAKE_SOURCE_DIR}/${dir})
+
+    file(GLOB DIR_CONTENTS "${FULL_DIR}/*")
+    list(LENGTH DIR_CONTENTS RES_LEN)
+
+    if (RES_LEN LESS_EQUAL 1)
+        execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive -- ${FULL_DIR}
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
     endif ()
 
-    message(STATUS "SCHC Full SDK is available at ${dir}")
-
     if (PROPAGATE)
-        add_subdirectory(${dir})
+        add_subdirectory(${FULL_DIR})
     endif ()
 endfunction()

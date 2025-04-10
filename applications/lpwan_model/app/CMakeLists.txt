@@ -9,5 +9,5 @@ target_include_directories(${APP_LIB}
         ${PLATFORM_INC_DIR}
         ${L2_INC_DIR})
 
-target_link_libraries(${APP_LIB} PUBLIC ${COMMONS_LIB} ${SCHC_COMMONS_LIB})
+target_link_libraries(${APP_LIB} PUBLIC ${COMMONS_LIB} ${SCHC_COMMONS_LIB} ${COAP_LIB})
 set(EXTRA_LIBS ${COMMONS_LIB} ${SCHC_COMMONS_LIB} PARENT_SCOPE)
