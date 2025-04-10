@@ -2,3 +2,6 @@
 	path = schc/full-sdk-delivery
 	url = https://gitlab.com/lab-schc/sdk/full-sdk-delivery.git
 	branch = dochkas/tmp_wakaama_fix
+[submodule "libs/external/libcoap"]
+	path = libs/external/libcoap
+	url = https://github.com/obgm/libcoap.git
