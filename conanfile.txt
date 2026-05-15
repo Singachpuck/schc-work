@@ -1,0 +1,7 @@
+[requires]
+cmocka/1.1.8
+[generators]
+CMakeDeps
+CMakeToolchain
+[layout]
+cmake_layout

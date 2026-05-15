@@ -1,0 +1,105 @@
+diff --git a/comp/CMakeLists.txt b/comp/CMakeLists.txt
+index 2e903474..f2c4c3b7 100644
+--- a/comp/CMakeLists.txt
++++ b/comp/CMakeLists.txt
+@@ -41,3 +41,7 @@ target_include_directories(
+ if(SCHC_CORE_MODE)
+   target_compile_definitions(${FULLSDK_LIB_NAME} PUBLIC SCHC_CORE_MODE)
+ endif()
++
++if (DEFINED RULE_ID_BITS)
++    target_compile_definitions(${FULLSDK_LIB_NAME} PUBLIC RULE_ID_BITS=${RULE_ID_BITS})
++endif ()
+\ No newline at end of file
+diff --git a/comp/src/compressor.c b/comp/src/compressor.c
+index 322948d5..f482f67e 100644
+--- a/comp/src/compressor.c
++++ b/comp/src/compressor.c
+@@ -247,8 +247,21 @@ static comp_status_t compress(bit_buffer_t *output_bb_ptr,
+   ca_params_t params;
+   bool res;
+ 
++#ifndef RULE_ID_BITS
+   // Write rule id into first byte.
+   push_16_bits(output_bb_ptr, &(rule_ptr->rule_id), 8, 8);
++#else
++
++#if RULE_ID_BITS > 16
++  return COMP_INTERNAL_ERR;
++#else
++
++  // Write rule id into first byte.
++  push_16_bits(output_bb_ptr, &(rule_ptr->rule_id), 16 - RULE_ID_BITS, RULE_ID_BITS);
++
++#endif
++
++#endif
+ 
+   // Create and initialize array of compression actions.
+   ca_func_t comp_actions[CDA_MAX_NB];
+diff --git a/comp/src/decompressor.c b/comp/src/decompressor.c
+index 6921f6ed..8b1b292f 100644
+--- a/comp/src/decompressor.c
++++ b/comp/src/decompressor.c
+@@ -581,7 +581,19 @@ comp_status_t schc_decompress_internal(const rules_t *rules_list,
+                                        bit_buffer_t *comp_bb,
+                                        const comp_callbacks_t *callbacks)
+ {
+-  if (comp_bb->last_bit_index < CHAR_BIT)
++#ifndef RULE_ID_BITS
++  uint8_t rule_bits = CHAR_BIT;
++#else
++
++#if RULE_ID_BITS > 16
++  return COMP_INTERNAL_ERR;
++#endif
++
++  uint8_t rule_bits = RULE_ID_BITS;
++
++#endif
++
++  if (comp_bb->last_bit_index < rule_bits)
+   {
+     // Packet should contains at least the rule ID.
+     TRACE(TR_TYPE_ERROR, TR_FAC_CMP, TR_MSG_CMP_EMPTY_DATA_BUFFER, 0);
+@@ -595,10 +607,15 @@ comp_status_t schc_decompress_internal(const rules_t *rules_list,
+   }
+ 
+   // Get rule to be used for decompression.
+-  uint8_t rule_byte = 0;
+-  move_n_bits(&rule_byte, 0, comp_bb->buffer_ptr, comp_bb->get_bit_index,
+-              CHAR_BIT);
+-  rule_t *rule_found = find_rule_from_id(rules_list, rule_byte);
++  uint8_t rule_id_bytes[2] = {0};
++  move_n_bits(rule_id_bytes, 16 - rule_bits,
++              comp_bb->buffer_ptr, comp_bb->get_bit_index, rule_bits);
++
++  // Ensure endianness
++  uint16_t rule_id = ((uint16_t)rule_id_bytes[0] << CHAR_BIT) |
++                (uint16_t)rule_id_bytes[1];
++
++  rule_t *rule_found = find_rule_from_id(rules_list, rule_id);
+   if (rule_found == NULL)
+   {
+     // SCHC rule not found.
+@@ -606,7 +623,7 @@ comp_status_t schc_decompress_internal(const rules_t *rules_list,
+           comp_bb->buffer_ptr);
+     return COMP_RULES_NOT_FOUND_ERR;
+   }
+-  comp_bb->get_bit_index += CHAR_BIT; // Rule was found, we skip rule ID now
++  comp_bb->get_bit_index += rule_bits; // Rule was found, we skip rule ID now
+ 
+   // Get the stack for this rule.
+   TRACE(TR_TYPE_INFO, TR_FAC_CMP, TR_MSG_CMP_DECOMP_WITH_RULE, 1, 1, TR_INT,
+diff --git a/config.cmake b/config.cmake
+index 0e5bee78..56839305 100644
+--- a/config.cmake
++++ b/config.cmake
+@@ -5,6 +5,7 @@ set(TARGET "default" CACHE STRING "Sets the target for which the FullSDK will be
+ set(EXTENSION_API "template" CACHE STRING "Extension API to be used") # Look in api/
+ # If template API is chosen
+ set(TEMPLATE_ID "dynamic" CACHE STRING "ID of the template which will be used")
++set(RULE_ID_BITS 4 CACHE STRING "Size of rule IDs. Max 16")
+ 
+ # Tests
+ option(RUN_UNIT_TESTS "Run the unit tests" OFF)

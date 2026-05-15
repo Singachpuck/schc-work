@@ -4,14 +4,16 @@ include(config.cmake)
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 include(AddGitSubmodule)
 
-set(SCHC_DIR "schc/full-sdk-delivery")
+#set(SCHC_DIR "schc/full-sdk-delivery")
 set(DELIVERY_DIR "${CMAKE_BINARY_DIR}/${TOOLCHAIN}/${TARGET}/deliver")
-add_git_submodule(${SCHC_DIR} FALSE)
-message(STATUS "SCHC Full SDK is available at ${SCHC_DIR}")
-
-include(${CMAKE_CURRENT_SOURCE_DIR}/${SCHC_DIR}/full-sdk/toolchains/${TOOLCHAIN}/${TARGET}.cmake)
+#add_git_submodule(${SCHC_DIR} FALSE)
+#message(STATUS "SCHC Full SDK is available at ${SCHC_DIR}")
+#
+#include(${CMAKE_CURRENT_SOURCE_DIR}/${SCHC_DIR}/full-sdk/toolchains/${TOOLCHAIN}/${TARGET}.cmake)
 
 project(schc_work C)
+
+add_subdirectory(schc/schc-sdk-fork)
 
 # Sets APP_DIRECTORY and EXEC_NAMES
 add_subdirectory(applications)
@@ -20,4 +22,8 @@ add_subdirectory(configure_files)
 
 add_subdirectory(libs)
 
-add_subdirectory(${SCHC_DIR})
+#add_subdirectory(${SCHC_DIR})
+
+find_package(cmocka)
+
+add_subdirectory(tests)
