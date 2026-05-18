@@ -108,19 +108,25 @@ int main() {
 
    */
 
+  // const uint8_t coap_payload[] = {
+  //   0x40, 0x02, 0x7d, 0xfb, 0xbd, 0x00, 0x6e, 0x6f, 0x74, 0x69, 0x66, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x04, 0x74, 0x65, 0x6d, 0x70, 0x11, 0x3c, 0xff, 0xf9, 0x4c, 0x80
+  // };
   const uint8_t coap_payload[] = {
-    0x40, 0x02, 0x7d, 0xfb, 0xbd, 0x00, 0x6e, 0x6f, 0x74, 0x69, 0x66, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x04, 0x74, 0x65, 0x6d, 0x70, 0x11, 0x3c, 0xff, 0xf9, 0x4c, 0x80
+    0xAB, 0xCD
   };
-  generate_ipv6_udp_packet(app_payload, DEVICE_ADDR, DEVICE_PORT, APP_ADDR, APP_PORT, coap_payload, sizeof(coap_payload));
 
-  // PRINT_MSG("\n");
-  // for (uint16_t i = 0; i < IPV6_HEADERS_BYTES + UDP_HEADERS_BYTES + sizeof(coap_payload); i++) {
-  //   uint8_t b = app_payload[i];
-  //   PRINT_MSG("%02X ", b);
-  //   if ((i + 1) % 10 == 0)
-  //     PRINT_MSG("\n");
-  // }
-  // PRINT_MSG("\n");
+  // generate_ipv6_udp_packet(app_payload, DEVICE_ADDR, DEVICE_PORT, APP_ADDR, APP_PORT, coap_payload, sizeof(coap_payload));
+
+  generate_ipv6_udp_packet(app_payload, DEVICE_ADDR, APP_PORT, APP_ADDR, DEVICE_PORT, coap_payload, sizeof(coap_payload));
+
+  PRINT_MSG("\n");
+  for (uint16_t i = 0; i < IPV6_HEADERS_BYTES + UDP_HEADERS_BYTES + sizeof(coap_payload); i++) {
+    uint8_t b = app_payload[i];
+    PRINT_MSG("%02X ", b);
+    if ((i + 1) % 10 == 0)
+      PRINT_MSG("\n");
+  }
+  PRINT_MSG("\n");
 
   app_send_data_request = true;
   while (true) {

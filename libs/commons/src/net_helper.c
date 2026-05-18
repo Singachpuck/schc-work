@@ -84,7 +84,7 @@ int generate_ipv6_udp_packet(uint8_t* packet,
     udph->uh_ulen = htons(UDP_HEADERS_BYTES + payload_size);
     // udph->uh_sum = udp_checksum(&(ip6h->ip6_src), &(ip6h->ip6_dst), udph, payload, payload_size);
     // TODO: Verify checksum
-    udph->uh_sum = htons(0x0039);
+    udph->uh_sum = 0;
 
     // Payload
     memcpy(packet + IPV6_HEADERS_BYTES + UDP_HEADERS_BYTES, payload, payload_size);

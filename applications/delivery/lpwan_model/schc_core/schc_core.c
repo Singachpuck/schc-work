@@ -99,7 +99,7 @@ static void net_data_received(const uint8_t *buffer, uint16_t data_size,
   app_process_request = true;
   app_send_data_request = true;
 
-  int sockfd = socket(AF_INET6, SOCK_RAW, IPPROTO_RAW);
+  int sockfd = socket(AF_INET6, SOCK_RAW, IPPROTO_UDP);
   if (sockfd < 0) {
     perror("socket() failed");
     return;
@@ -107,13 +107,9 @@ static void net_data_received(const uint8_t *buffer, uint16_t data_size,
 
   struct sockaddr_in6 dest_addr = {0};
   dest_addr.sin6_family = AF_INET6;
-  if (inet_pton(AF_INET6, APP_ADDR, &dest_addr.sin6_addr) != 1) {
-    perror("inet_pton() failed");
-    close(sockfd);
-    return;
-  }
+  memcpy(&dest_addr.sin6_addr, buffer + 8, 16);
 
-  ssize_t sent_bytes = sendto(sockfd, buffer, data_size, 0,
+  ssize_t sent_bytes = sendto(sockfd, buffer + 40, data_size - 40, 0,
                             (struct sockaddr *)&dest_addr, sizeof(dest_addr));
 
   if (sent_bytes == -1) {
@@ -124,6 +120,8 @@ static void net_data_received(const uint8_t *buffer, uint16_t data_size,
 
   PRINT_MSG("Sent %ld bytes to %s:%s\n", sent_bytes, APP_ADDR, APP_PORT);
 
+  fflush(stdout);
+  fflush(stderr);
   close(sockfd);
 }
 

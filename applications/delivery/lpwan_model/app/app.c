@@ -1,3 +1,4 @@
+#include <platform.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -25,7 +26,7 @@ int main() {
     socklen_t addr_len = sizeof(server_addr);
     const uint16_t port = atoi(APP_PORT);
 
-    if ((sockfd = socket(AF_INET6, SOCK_RAW, IPPROTO_UDP)) < 0) {
+    if ((sockfd = socket(AF_INET6, SOCK_DGRAM, 0)) < 0) {
         perror("socket creation failed");
         exit(EXIT_FAILURE);
     }
@@ -50,6 +51,8 @@ int main() {
 
     printf("CoAP server is listening on port %s...\n", APP_PORT);
 
+    fflush(stdout);
+
     while (1) {
         ssize_t recv_len = recvfrom(sockfd, buffer, RECEIVE_BUFFER_SIZE, 0,
                                     (struct sockaddr*)&client_addr, &addr_len);
@@ -58,28 +61,25 @@ int main() {
             continue;
         }
 
-        if (recv_len < 16) {
-            perror("packet is corrupt");
-            continue;
+        printf("Received %ld CoAP bytes\n", recv_len);
+
+        // TODO: Add logging util to the commons lib
+        for (uint16_t i = 0; i < recv_len; i++) {
+            const uint8_t b = buffer[i];
+            printf("%02X ", b);
+            if ((i + 1) % 10 == 0)
+                printf("\n");
         }
+        printf("\n");
 
-        if (ntohs(*(uint16_t*) (buffer + 2)) == port) {
-            // TODO: Add logging util to the commons lib
-            for (uint16_t i = 0; i < recv_len; i++) {
-                const uint8_t b = buffer[i];
-                printf("%02X ", b);
-                if ((i + 1) % 10 == 0)
-                    printf("\n");
-            }
-            printf("\n");
-
-            coap_pdu_parse(COAP_PROTO_UDP, buffer + 8, recv_len - 8, pdu);
-
+        if (coap_pdu_parse(COAP_PROTO_UDP, buffer, recv_len, pdu)) {
             coap_show_pdu(LOG_INFO, pdu);
-
-            fflush(stdout);
-            fflush(stderr);
+        } else {
+            PRINT_MSG("Error parsing CoAP Request");
         }
+
+        fflush(stdout);
+        fflush(stderr);
     }
 
     coap_delete_pdu(pdu);
