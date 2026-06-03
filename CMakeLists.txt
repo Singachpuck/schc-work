@@ -16,11 +16,13 @@ project(schc_work C)
 add_subdirectory(schc/schc-sdk-fork)
 
 # Sets APP_DIRECTORY and EXEC_NAMES
-add_subdirectory(applications)
+add_subdirectory(applications/delivery)
 
 add_subdirectory(configure_files)
 
 add_subdirectory(libs)
+
+add_subdirectory(applications/schc_worker_linux)
 
 #add_subdirectory(${SCHC_DIR})
 

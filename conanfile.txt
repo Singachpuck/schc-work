@@ -1,5 +1,6 @@
 [requires]
 cmocka/1.1.8
+ahoi-module/1.0.0-3
 [generators]
 CMakeDeps
 CMakeToolchain

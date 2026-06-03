@@ -66,3 +66,4 @@ target_include_directories(
 
 add_test(NAME ${TEST_SCHC_PUSH_PULL} COMMAND ${TEST_SCHC_PUSH_PULL})
 
+add_subdirectory(integration/ahoi_linux)

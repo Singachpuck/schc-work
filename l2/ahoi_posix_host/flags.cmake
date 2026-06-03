@@ -1,0 +1,1 @@
+set(L2_INC_DIR ${CMAKE_CURRENT_LIST_DIR}/include)
