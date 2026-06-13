@@ -1,18 +1,12 @@
-#include <setjmp.h>
-#include <stdarg.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <string.h>
-
-#include <cmocka.h>
-
-//#include "fullsdkl2a.h"
 #include <fullsdkfragapi.h>
 #include <fullsdkmgt.h>
 #include <fullsdknet.h>
 #include <fullsdkl2.h>
 #include <platform.h>
 
+#include "schc_al.h"
+
+// TODO: Consider buffer sizes
 #define RECEIVE_BUFFER_SIZE 1500
 #define TRANSMISSION_BUFFER_SIZE 1500
 
@@ -26,13 +20,23 @@
 MGT_SCHC_ACK_PACKET_SIZE * 3u + 64 * 2u)
 
 bool mgt_process_request = false;
-bool volatile terminate_flag = false;
 static uint8_t mgt_mem_block[MEM_BLOCK_SIZE];
 
 //static const char* ahoi_port = "/run/user/1000/slv_cons";
 static const char* ahoi_port = "/run/user/1000/slv_triggered_prod";
 
 static TimerEvent_t sdk_timers[3];
+static const net_callbacks_t *net_callbacks;
+
+static volatile sig_atomic_t terminate_flag = 0;
+
+static void sigint_handler(int signum)
+{
+    (void)signum;  /* Unused parameter */
+    terminate_flag = 1;
+}
+
+static void terminate();
 
 // Timers
 static void sdk_timer_1_event(void *context) {
@@ -77,39 +81,7 @@ static mgt_callbacks_t mgt_callbacks = {
         NULL,
 };
 
-// NET callbacks
-static void net_transmission_result(net_status_t status, uint16_t error) {
-    if (status != NET_SUCCESS) {
-        PRINT_MSG("transmission result KO (status %d)\n", status);
-        return;
-    }
-    PRINT_MSG("transmission result OK\n");
-}
-
-static void net_data_received(const uint8_t *buffer, uint16_t data_size,
-                              net_status_t status) {
-    PRINT_MSG("data received %d bytes - status %d\n", data_size, status);
-    uint8_t b;
-    for (uint16_t i = 0; i < data_size; i++) {
-        b = buffer[i];
-        PRINT_MSG("%02X ", b);
-        if ((i + 1) % 10 == 0)
-            PRINT_MSG("\n");
-    }
-    PRINT_MSG("\n");
-
-//    app_process_request = true;
-//    app_send_data_request = true;
-    terminate_flag = true;
-}
-
-static net_callbacks_t net_callbacks = {
-        net_transmission_result,
-        net_data_received
-};
-
-void test_ahoi_l2(void** state) {
-    (void) state;
+int main() {
 
     // SDK timers initialization.
     TimerInit(&sdk_timers[0], sdk_timer_1_event);
@@ -122,21 +94,37 @@ void test_ahoi_l2(void** state) {
 
     // Informs the SDK regarding the application mode in order to use the correct
     // fragmentation profile.
-    mgt_set_mode(SDK_DEVICE_MODE);
+    // mgt_set_mode(SDK_DEVICE_MODE);
 
     if (mgt_initialize(&mgt_callbacks, mgt_mem_block, MEM_BLOCK_SIZE,
                        MAX_MTU_SIZE, MAX_PAYLOAD_SIZE) != MGT_SUCCESS) {
         PRINT_MSG("Error : mgt_initialize() failed\n");
-        assert_true(false);
+        goto error;
     }
 
-    const net_status_t status = net_initialize(&net_callbacks);
+    net_callbacks = schc_al_get_net_callbacks();
+    const net_status_t status = net_initialize(net_callbacks);
     if (status != NET_SUCCESS) {
         PRINT_MSG("Error : net_initialize() failed (status %d)\n", status);
-        assert_true(false);
+        goto error;
     }
 
-    bool app_send_data_request = true;
+    if (schc_al_init() != 0) {
+        PRINT_MSG("Error : schc_worker_init() failed\n");
+        goto error;
+    }
+
+    struct sigaction sa = {0};
+    sa.sa_handler = sigint_handler;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+
+    if (sigaction(SIGINT, &sa, NULL) == -1 || sigaction(SIGTERM, &sa, NULL) == -1)
+    {
+        perror("sigaction");
+        goto error;
+    }
+
     while (!terminate_flag) {
         if (mgt_process_request) {
             mgt_process_request = false;
@@ -144,21 +132,27 @@ void test_ahoi_l2(void** state) {
 
             if (mgt_status != MGT_SUCCESS) {
                 PRINT_MSG("Error processing SCHC packet (%d)", mgt_status);
-                assert_true(false);
+            }
+        }
+        if (schc_al_is_processing_required()) {
+            schc_al_process_status_t schc_al_status = schc_al_process();
+            if (schc_al_status != SEND_DOWN_OK && schc_al_status != SEND_DOWN_BUSY) {
+                PRINT_MSG("schc_al>critical error\n");
             }
         }
         platform_enter_low_power_ll();
     }
 
+    terminate();
+    return 0;
+
+    error:
+    terminate();
+    return -1;
+}
+
+static void terminate() {
+    PRINT_MSG("schc_al_main>Terminating the program\n");
+    schc_al_terminate();
     l2_deinit();
 }
-
-
-int main(void) {
-    const struct CMUnitTest tests[] = {
-            cmocka_unit_test(test_ahoi_l2),
-    };
-
-    return cmocka_run_group_tests(tests, NULL, NULL);
-}
-

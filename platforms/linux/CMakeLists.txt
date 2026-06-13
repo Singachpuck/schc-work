@@ -8,3 +8,5 @@ target_link_libraries(${PLATFORM_LIB} rt pthread)
 target_include_directories(${PLATFORM_LIB}
   PRIVATE
   ${PLATFORM_INC_DIR})
+
+target_compile_definitions(${PLATFORM_LIB} PRIVATE NVM_FILENAME="${NVM_FILENAME}")

@@ -11,9 +11,9 @@ set(RULE_ID_BITS 4 CACHE STRING "Size of rule IDs. Max 16" FORCE)
 add_subdirectory(${PROJECT_SOURCE_DIR}/schc/schc-sdk-fork ${PROJECT_BINARY_DIR}/schc-sdk-ahoi-linux)
 
 set(L2_STACK "ahoi_posix_host")
-set(L2_STACK_LIB "l2-ahoi-posix")
+set(L2_STACK_LIB "test-l2-ahoi-posix")
 set(PLATFORM "linux")
-set(PLATFORM_LIB "platform-${PLATFORM}")
+set(PLATFORM_LIB "test-platform-${PLATFORM}")
 set(AHOI_LIB "ahoi-module::ahoi-module")
 set(IO_LIB "io-lib::io-lib")
 
@@ -21,8 +21,8 @@ include(${PROJECT_SOURCE_DIR}/platforms/${PLATFORM}/flags.cmake)
 include(${PROJECT_SOURCE_DIR}/l2/${L2_STACK}/flags.cmake)
 set(FULLSDK_INC_DIR ${CMAKE_BINARY_DIR}/${TOOLCHAIN}/${TARGET}/deliver)
 
-add_subdirectory(${PROJECT_SOURCE_DIR}/l2/${L2_STACK} ${CMAKE_BINARY_DIR}/l2/${L2_STACK})
-add_subdirectory(${PROJECT_SOURCE_DIR}/platforms/${PLATFORM} ${CMAKE_BINARY_DIR}/platform/${PLATFORM})
+add_subdirectory(${PROJECT_SOURCE_DIR}/l2/${L2_STACK} ${CMAKE_BINARY_DIR}/tests/l2/${L2_STACK})
+add_subdirectory(${PROJECT_SOURCE_DIR}/platforms/${PLATFORM} ${CMAKE_BINARY_DIR}/tests/platform/${PLATFORM})
 
 
 add_executable(

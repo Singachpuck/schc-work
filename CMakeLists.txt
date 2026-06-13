@@ -11,7 +11,17 @@ set(DELIVERY_DIR "${CMAKE_BINARY_DIR}/${TOOLCHAIN}/${TARGET}/deliver")
 #
 #include(${CMAKE_CURRENT_SOURCE_DIR}/${SCHC_DIR}/full-sdk/toolchains/${TOOLCHAIN}/${TARGET}.cmake)
 
+set(L2_STACK_LIB "l2-ahoi-posix")
+set(PLATFORM_LIB "platform-${PLATFORM}")
+set(AHOI_LIB "ahoi-module::ahoi-module")
+set(IO_LIB "io-lib::io-lib")
+
 project(schc_work C)
+
+include(GNUInstallDirs)
+include(profiles/${PROFILE_NAME}/config.cmake)
+
+find_package(ahoi-module)
 
 add_subdirectory(schc/schc-sdk-fork)
 
@@ -21,6 +31,12 @@ add_subdirectory(applications/delivery)
 add_subdirectory(configure_files)
 
 add_subdirectory(libs)
+
+include(${PROJECT_SOURCE_DIR}/platforms/${PLATFORM}/flags.cmake)
+include(${PROJECT_SOURCE_DIR}/l2/${L2_STACK}/flags.cmake)
+set(FULLSDK_INC_DIR ${CMAKE_BINARY_DIR}/${TOOLCHAIN}/${TARGET}/deliver)
+add_subdirectory(platforms/${PLATFORM})
+add_subdirectory(l2/${L2_STACK})
 
 add_subdirectory(applications/schc_worker_linux)
 

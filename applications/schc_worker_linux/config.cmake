@@ -1,0 +1,15 @@
+set(IPv6_PREFIX "2001:db8" CACHE STRING "")
+set(IPv6_PREFIX_LEN "64" CACHE STRING "")
+set(IPv6_IID "::1" CACHE STRING "")
+set(IPv6_PEER_PREFIX "2001:db9" CACHE STRING "")
+set(IPv6_PEER_PREFIX_LEN "64" CACHE STRING "")
+set(IPv6_PEER_IID "::1" CACHE STRING "")
+set(IPv6_MAX_PACKET_SIZE 255 CACHE STRING "")
+
+option(OSCORE_PROXY_ENABLED "dqwdqwdw" OFF)
+option(REGULAR_COMP "" ON)
+option(OSCORE_INNER_MAX_SIZE 128)
+option(OSCORE_OUTER_MAX_SIZE 192)
+option(OSCORE_DROP_ON_ERROR "" ON) # If OFF, sends plain CoAP
+
+set(NVM_FILENAME "schc_nvm.conf" CACHE STRING "Filename for Non-Volatile Memory storage")
