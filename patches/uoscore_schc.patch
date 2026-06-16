@@ -44,8 +44,9 @@ index f3b7e3d..745c654 100644
  
  #endif
 diff --git a/inc/oscore_ext.h b/inc/oscore_ext.h
-index e69de29..7b08595 100644
---- a/inc/oscore_ext.h
+new file mode 100644
+index 0000000..7b08595
+--- /dev/null
 +++ b/inc/oscore_ext.h
 @@ -0,0 +1,16 @@
 +#ifndef OSCORE_EXT_H
