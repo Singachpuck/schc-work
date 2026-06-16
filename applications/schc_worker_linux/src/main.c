@@ -4,11 +4,11 @@
 #include <fullsdkl2.h>
 #include <platform.h>
 
+#include "schc_al_params.h"
 #include "schc_al.h"
 
 // TODO: Consider buffer sizes
 #define RECEIVE_BUFFER_SIZE 1500
-#define TRANSMISSION_BUFFER_SIZE 1500
 
 // Assume (MAX_PAYLOAD_SIZE + MGT_PROTO_SIZE) must be 4-bytes aligned
 #define MAX_PAYLOAD_SIZE RECEIVE_BUFFER_SIZE
@@ -89,8 +89,15 @@ int main() {
     TimerInit(&sdk_timers[2], sdk_timer_3_event);
 
     l2_set_mtu(20);
+
+#ifdef L2_STACK_ahoi_posix_host
     l2_set_serial_port(ahoi_port);
     l2_set_iid(0x0A);
+#endif
+
+#ifdef L2_STACK_udp6
+    // TODO:
+#endif
 
     // Informs the SDK regarding the application mode in order to use the correct
     // fragmentation profile.
@@ -154,5 +161,7 @@ int main() {
 static void terminate() {
     PRINT_MSG("schc_al_main>Terminating the program\n");
     schc_al_terminate();
+#ifdef L2_STACK_ahoi_posix_host
     l2_deinit();
+#endif
 }

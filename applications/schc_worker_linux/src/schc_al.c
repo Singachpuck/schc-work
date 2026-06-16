@@ -239,14 +239,6 @@ static void net_data_received(const uint8_t *buffer, uint16_t data_size, net_sta
     if (status != NET_SUCCESS) {
         return;
     }
-
-    // if (data_size > sizeof(uplink_buffer)) {
-    //     PRINT_MSG("schc_al>uplink packet too large (%u)\n", data_size);
-    //     return;
-    // }
-    //
-    // memcpy(uplink_buffer, buffer, data_size);
-    // uplink_size = data_size;
     schc_al_forward_up(buffer, data_size);
 }
 

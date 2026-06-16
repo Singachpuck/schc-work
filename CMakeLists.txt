@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
 
+project(schc_work C)
+
 include(config.cmake)
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 include(AddGitSubmodule)
@@ -16,8 +18,6 @@ set(PLATFORM_LIB "platform-${PLATFORM}")
 set(AHOI_LIB "ahoi-module::ahoi-module")
 set(IO_LIB "io-lib::io-lib")
 
-project(schc_work C)
-
 include(GNUInstallDirs)
 include(profiles/${PROFILE_NAME}/config.cmake)
 
@@ -32,11 +32,11 @@ add_subdirectory(configure_files)
 
 add_subdirectory(libs)
 
-include(${PROJECT_SOURCE_DIR}/platforms/${PLATFORM}/flags.cmake)
-include(${PROJECT_SOURCE_DIR}/l2/${L2_STACK}/flags.cmake)
+include("${PROJECT_SOURCE_DIR}/platforms/${PLATFORM}/flags.cmake")
+include("${L2_STACK_BASE}/${L2_STACK}/flags.cmake")
 set(FULLSDK_INC_DIR ${CMAKE_BINARY_DIR}/${TOOLCHAIN}/${TARGET}/deliver)
 add_subdirectory(platforms/${PLATFORM})
-add_subdirectory(l2/${L2_STACK})
+add_subdirectory(${L2_STACK_BASE}/${L2_STACK} l2/${L2_STACK})
 
 add_subdirectory(applications/schc_worker_linux)
 
