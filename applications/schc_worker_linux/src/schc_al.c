@@ -173,6 +173,7 @@ static schc_al_process_status_t schc_al_send_down() {
     const net_status_t status = net_sendto(net_buffer, pkt_len);
     if (status != NET_SUCCESS) {
         PRINT_MSG("schc_al>net_sendto() failed (status %d)\n", status);
+        event &= ~ONGOING_TRANSMISSION;
         return SEND_DOWN_INTERNAL_ERROR;
     }
 
@@ -193,8 +194,9 @@ static void net_transmission_result(net_status_t status, uint16_t error) {
     (void) error;
     if (status != NET_SUCCESS) {
         PRINT_MSG("schc_al>transmission failed (status %d)\n", status);
+    } else {
+        PRINT_MSG("schc_al>transmission success (status %d)\n", status);
     }
-    PRINT_MSG("schc_al>transmission success (status %d)\n", status);
     event &= ~ONGOING_TRANSMISSION;
 }
 

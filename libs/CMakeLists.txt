@@ -47,3 +47,51 @@ if (DEFINED SCHC_FRAG_EXT_API)
     set(SCHC_FRAG_EXT_API_INC_DIR ${SCHC_FRAG_EXT_API_INC_DIR} PARENT_SCOPE)
     add_subdirectory(schc_frag_apis/${SCHC_FRAG_EXT_API})
 endif ()
+
+if (OSCORE_PROXY_ENABLED)
+    include(ExternalProject)
+
+    set(OSCORE_LIB "uoscore")
+    set(UOSCORE_SRC_DIR "${PROJECT_SOURCE_DIR}/libs/external/uoscore")
+    set(OSCORE_INC "${UOSCORE_SRC_DIR}/inc")
+    set(UOSCORE_BUILD_DIR "${UOSCORE_SRC_DIR}/build")
+
+    # uOSCORE dependencies
+#    set(MBEDCRYPTO_LIB "mbedcrypto")
+#    add_subdirectory("${UOSCORE_SRC_DIR}/externals/mbedtls" "${PROJECT_BINARY_DIR}/mbedtls")
+
+    set(ZCBOR_LIB "zcbor")
+    set(ZCBOR_INC "${UOSCORE_SRC_DIR}/externals/zcbor/include/")
+    set(ZCBOR_SRC
+            "${UOSCORE_SRC_DIR}/externals/zcbor/src/zcbor_common.c"
+            "${UOSCORE_SRC_DIR}/externals/zcbor/src/zcbor_encode.c")
+    add_library(${ZCBOR_LIB} OBJECT ${ZCBOR_SRC})
+    target_include_directories(${ZCBOR_LIB} PRIVATE ${ZCBOR_INC})
+
+    ExternalProject_Add(uoscore_project
+            SOURCE_DIR "${UOSCORE_SRC_DIR}"
+            BINARY_DIR "${UOSCORE_SRC_DIR}"
+            CONFIGURE_COMMAND ""
+            BUILD_COMMAND make CC=${CMAKE_C_COMPILER} AR=${CMAKE_AR}
+            INSTALL_COMMAND ""
+            BUILD_BYPRODUCTS "${UOSCORE_BUILD_DIR}/libuoscore-uedhoc.a"
+    )
+
+    add_library(${OSCORE_LIB} STATIC IMPORTED GLOBAL)
+    set_target_properties(${OSCORE_LIB} PROPERTIES
+            IMPORTED_LOCATION "${UOSCORE_BUILD_DIR}/libuoscore-uedhoc.a"
+            INTERFACE_INCLUDE_DIRECTORIES "${OSCORE_INC}"
+    )
+    add_dependencies(${OSCORE_LIB} uoscore_project)
+
+    set(OSCORE_INC ${OSCORE_INC} PARENT_SCOPE)
+    set(OSCORE_LIB ${OSCORE_LIB} PARENT_SCOPE)
+    set(ZCBOR_LIB ${ZCBOR_LIB} PARENT_SCOPE)
+endif ()
+
+if (CRYPTO_LIB STREQUAL "ascon-c")
+    set(ASCON_INTEGRATION_LIB "ascon-integration")
+#    set(ASCON_INTEGRATION_LIB ${ASCON_INTEGRATION_LIB})
+    add_subdirectory(ascon_integration)
+    set(CRYPTO_SUITE ${ASCON_LIB} $<TARGET_OBJECTS:${ASCON_INTEGRATION_LIB}> PARENT_SCOPE)
+endif ()

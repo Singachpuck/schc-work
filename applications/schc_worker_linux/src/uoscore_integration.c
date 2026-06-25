@@ -41,6 +41,10 @@ static uint8_t ID_CONTEXT_LEN = 0;
 
 static struct context osc_ctx;
 
+struct context * get_oscore_ctx() {
+    return &osc_ctx;
+}
+
 #ifdef REGULAR_COMP
 static bool
 oscore_msg_inner_compression(uint8_t *plaintext, uint32_t *plaintext_size)
@@ -156,7 +160,7 @@ static bool oscore_inner_schc_enabled = true;
 
 void disable_inner_compression(void)
 {
-    oscore_inner_schc_enabled = true;
+    oscore_inner_schc_enabled = false;
 }
 
 static coap_oscore_res_t uoscore_err_to_res(enum err error) {
@@ -210,7 +214,7 @@ bool oscore_security_context_init(uint8_t *oscore_master_secret,
             oscore_master_salt_size,
             oscore_master_salt
         },
-        OSCORE_AES_CCM_16_64_128,
+        OSCORE_ASCONAEAD128_32,
         OSCORE_SHA_256
     };
     enum err r = oscore_context_init(&params_sender, &osc_ctx);

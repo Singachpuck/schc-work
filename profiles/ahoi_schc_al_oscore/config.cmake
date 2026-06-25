@@ -7,3 +7,4 @@ include(${CMAKE_CURRENT_LIST_DIR}/../common/ahoi.cmake)
 
 option(OSCORE_PROXY_ENABLED "" ON)
 set(OSCORE_INNER_MAX_SIZE 127 CACHE STRING "" )
+include(${CMAKE_CURRENT_LIST_DIR}/../common/ascon.cmake)

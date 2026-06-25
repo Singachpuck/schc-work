@@ -13,7 +13,7 @@ l2a_technology_t l2a_technology = L2A_DEFAULT;
 // L2 MTU. It can be overriden by the application.
 static uint16_t l2_mtu = AHOI_MAX_PAYLOAD_SIZE;
 
-#define AHOI_MAX_ENCODED_SIZE ((127 + 6) * 2 + 4)
+// #define AHOI_MAX_ENCODED_SIZE ((127 + 6) * 2 + 4)
 
 static const char* ahoi_port = "/dev/ttyUSB0";
 static uint8_t iid = 1;
@@ -133,7 +133,8 @@ uint32_t l2a_get_next_tx_delay(uint16_t data_size)
     printf("l2a>l2a_get_next_tx_delay() called\n");
 
     // Return 500ms delay.
-    return 500;
+    // return 500;
+    return 1;
 }
 
 consumer_status_t packet_consumer(ahoi_packet_t* pkt) {

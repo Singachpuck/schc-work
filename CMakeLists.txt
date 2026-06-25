@@ -4,7 +4,7 @@ project(schc_work C)
 
 include(config.cmake)
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
-include(AddGitSubmodule)
+#include(AddGitSubmodule)
 
 #set(SCHC_DIR "schc/full-sdk-delivery")
 set(DELIVERY_DIR "${CMAKE_BINARY_DIR}/${TOOLCHAIN}/${TARGET}/deliver")
@@ -17,11 +17,13 @@ set(L2_STACK_LIB "l2-ahoi-posix")
 set(PLATFORM_LIB "platform-${PLATFORM}")
 set(AHOI_LIB "ahoi-module::ahoi-module")
 set(IO_LIB "io-lib::io-lib")
+set(ASCON_LIB "ascon-c::ascon-c")
 
 include(GNUInstallDirs)
 include(profiles/${PROFILE_NAME}/config.cmake)
 
 find_package(ahoi-module)
+find_package(ascon-c)
 
 add_subdirectory(schc/schc-sdk-fork)
 

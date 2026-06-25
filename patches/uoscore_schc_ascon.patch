@@ -1,0 +1,476 @@
+diff --git a/Makefile b/Makefile
+index f88feef..38b2fbb 100644
+--- a/Makefile
++++ b/Makefile
+@@ -30,9 +30,14 @@ $(shell mkdir -p $(DIR))
+ 
+ C_SOURCES += $(wildcard src/edhoc/*.c)
+ C_SOURCES += $(wildcard src/oscore/*.c)
+-C_SOURCES += $(wildcard src/common/*.c)
++# Include all common C sources except crypto_p256.c
++C_SOURCES += $(filter-out src/common/crypto_p256.c, $(wildcard src/common/*.c))
+ C_SOURCES += $(wildcard src/cbor/*.c)
+ 
++ifeq ($(findstring MBEDTLS,$(CRYPTO_ENGINE)),MBEDTLS)
++C_SOURCES += src/common/crypto_p256.c
++endif
++
+ 
+ #$(info    \n C_SOURCES is $(C_SOURCES))
+ vpath %.c $(sort $(dir $(C_SOURCES)))
+@@ -125,11 +130,12 @@ endif
+ # C includes
+ ################################################################################
+ # Set a default crypto engine if non is provided in CRYPTO_ENGINE or CC
+-ifneq ($(findstring TINYCRYPT,$(EXTENDED_CFLAGS)),TINYCRYPT) 
+-ifneq ($(findstring MBEDTLS,$(EXTENDED_CFLAGS)),MBEDTLS) 
++#ifneq ($(findstring TINYCRYPT,$(EXTENDED_CFLAGS)),TINYCRYPT)
++#ifneq ($(findstring MBEDTLS,$(EXTENDED_CFLAGS)),MBEDTLS)
++ifndef CRYPTO_ENGINE
+ EXTENDED_CFLAGS += -DTINYCRYPT
+ endif
+-endif
++#endif
+ 
+ C_INCLUDES += -Iinc
+ 
+diff --git a/inc/common/oscore_edhoc_error.h b/inc/common/oscore_edhoc_error.h
+index 244e9c2..6131344 100644
+--- a/inc/common/oscore_edhoc_error.h
++++ b/inc/common/oscore_edhoc_error.h
+@@ -36,6 +36,7 @@ enum err {
+ 
+ 	sign_failed = 103,
+ 	sha_failed = 104,
++	aead_failed = 105,
+ 
+ 	unsupported_cipher_suite = 106,
+ 	unsupported_ecdh_curve = 107,
+@@ -79,6 +80,10 @@ enum err {
+ 	oscore_interaction_duplicated_token = 221,
+ 	oscore_interaction_not_found = 222,
+ 	oscore_wrong_uri_path = 223,
++
++	/* SCHC errors */
++	schc_inner_comp_error = 300,
++	schc_inner_decomp_error = 301
+ };
+ 
+ /*This macro checks if a function returns an error and if so it propagates 
+diff --git a/inc/oscore.h b/inc/oscore.h
+index f3b7e3d..745c654 100644
+--- a/inc/oscore.h
++++ b/inc/oscore.h
+@@ -23,6 +23,8 @@
+ #include "common/oscore_edhoc_error.h"
+ #include "common/print_util.h"
+ 
++#include "oscore_ext.h"
++
+ /*
+  * When OSCORE is used with fixed keys, i.e., no re-keying with EDHOC 
+  * after reboot the SSN needs to be stored at runtime in NVM and restored 
+@@ -114,7 +116,7 @@ enum err oscore_context_init(struct oscore_init_params *params,
+  * @return	err
+  */
+ enum err oscore2coap(uint8_t *buf_in, uint32_t buf_in_len, uint8_t *buf_out,
+-		     uint32_t *buf_out_len, struct context *c);
++		     uint32_t *buf_out_len, struct context *c, plaintext_cb_t oscore_msg_inner_decompression);
+ 
+ /**
+  *@brief 	Converts a CoAP packet to OSCORE packet
+@@ -128,6 +130,6 @@ enum err oscore2coap(uint8_t *buf_in, uint32_t buf_in_len, uint8_t *buf_out,
+  */
+ enum err coap2oscore(uint8_t *buf_o_coap, uint32_t buf_o_coap_len,
+ 		     uint8_t *buf_oscore, uint32_t *buf_oscore_len,
+-		     struct context *c);
++		     struct context *c, plaintext_cb_t oscore_msg_inner_compression);
+ 
+ #endif
+diff --git a/inc/oscore/supported_algorithm.h b/inc/oscore/supported_algorithm.h
+index 8d65292..a49b264 100644
+--- a/inc/oscore/supported_algorithm.h
++++ b/inc/oscore/supported_algorithm.h
+@@ -12,6 +12,8 @@
+ #ifndef SUPPORTED_ALGORITHM_H
+ #define SUPPORTED_ALGORITHM_H
+ 
++#include <stdint.h>
++
+ /*default HKDF SHA256*/
+ enum hkdf {
+ 	OSCORE_SHA_256,
+@@ -20,11 +22,25 @@ enum hkdf {
+ enum AEAD_algorithm {
+ 	//AES-CCM mode 128-bit key, 64-bit tag, 13-byte nonce
+ 	OSCORE_AES_CCM_16_64_128 = 10,
++	OSCORE_ASCONAEAD128 = 35,
++	OSCORE_ASCONAEAD128_64 = 36,
++	OSCORE_ASCONAEAD128_32 = 37,
+ };
+ 
+-#define AUTH_TAG_LEN 8
+-#define NONCE_LEN 13
+-#define COMMON_IV_LEN 13
++typedef struct aead_conf {
++	enum AEAD_algorithm aead_name;
++	uint8_t tag_len;
++	uint8_t nonce_len;
++	uint8_t key_len;
++} aead_conf_t;
++
++typedef struct hkdf_conf {
++	enum hkdf hkdf_name;
++} hkdf_conf_t;
++
++#define AUTH_TAG_LEN 16
++#define NONCE_LEN 16
++#define COMMON_IV_LEN NONCE_LEN
+ #define MASTER_SECRET_LEN_ 16
+ #define RECIPIENT_ID_BUFF_LEN 8
+ #define SENDER_KEY_LEN_ MASTER_SECRET_LEN_
+diff --git a/inc/oscore_ext.h b/inc/oscore_ext.h
+new file mode 100644
+index 0000000..7b08595
+--- /dev/null
++++ b/inc/oscore_ext.h
+@@ -0,0 +1,16 @@
++#ifndef OSCORE_EXT_H
++#define OSCORE_EXT_H
++
++#include <stdbool.h>
++#include <stdint.h>
++
++/** Callback used to process inner Compression and decompression
++ * plaintext: oscore plaintext
++ * plaintext_size: oscore plaintext size
++ *
++ * Returned value;
++ * - bool: True if success otherwise it will return False
++ **/
++typedef bool (*plaintext_cb_t)(uint8_t *plaintext, uint32_t *plaintext_size);
++
++#endif
+\ No newline at end of file
+diff --git a/makefile_config.mk b/makefile_config.mk
+index 0bc6951..c78667f 100644
+--- a/makefile_config.mk
++++ b/makefile_config.mk
+@@ -158,5 +158,6 @@ FEATURES += -DI_OPTIONS_BUFF_MAX_LEN=100
+ 
+ 
+ #CRYPTO_ENGINE += -DTINYCRYPT
+-CRYPTO_ENGINE += -DCOMPACT25519
+-CRYPTO_ENGINE += -DMBEDTLS
++#CRYPTO_ENGINE += -DCOMPACT25519
++#CRYPTO_ENGINE += -DMBEDTLS
++CRYPTO_ENGINE += -DASCON
+diff --git a/src/oscore/coap2oscore.c b/src/oscore/coap2oscore.c
+index 1ef588b..935e122 100644
+--- a/src/oscore/coap2oscore.c
++++ b/src/oscore/coap2oscore.c
+@@ -510,7 +510,7 @@ static enum err encrypt_wrapper(struct byte_array *plaintext,
+ 				struct oscore_option *oscore_option)
+ {
+ 	BYTE_ARRAY_NEW(new_piv, MAX_PIV_LEN, MAX_PIV_LEN);
+-	BYTE_ARRAY_NEW(new_nonce, NONCE_LEN, NONCE_LEN);
++	BYTE_ARRAY_NEW(new_nonce, c->rrc.nonce.len, c->rrc.nonce.len);
+ 	struct byte_array piv = BYTE_ARRAY_INIT(NULL, 0);
+ 	struct byte_array kid = BYTE_ARRAY_INIT(NULL, 0);
+ 	struct byte_array kid_context = BYTE_ARRAY_INIT(NULL, 0);
+@@ -559,7 +559,7 @@ static enum err encrypt_wrapper(struct byte_array *plaintext,
+ 
+ 	/* Update nonce only after successful encryption (for handling future responses). */
+ 	if (use_new_piv) {
+-		TRY(byte_array_cpy(&c->rrc.nonce, &nonce, NONCE_LEN));
++		TRY(byte_array_cpy(&c->rrc.nonce, &nonce, c->rrc.nonce.len));
+ 	}
+ 
+ 	/* Handle OSCORE interactions after successful encryption. */
+@@ -589,7 +589,7 @@ static enum err encrypt_wrapper(struct byte_array *plaintext,
+  */
+ enum err coap2oscore(uint8_t *buf_o_coap, uint32_t buf_o_coap_len,
+ 		     uint8_t *buf_oscore, uint32_t *buf_oscore_len,
+-		     struct context *c)
++		     struct context *c, plaintext_cb_t oscore_msg_inner_compression)
+ {
+ 	struct o_coap_packet o_coap_pkt;
+ 	struct byte_array buf;
+@@ -644,9 +644,14 @@ enum err coap2oscore(uint8_t *buf_o_coap, uint32_t buf_o_coap_len,
+ 	/* Combine code, E-options and payload of CoAP to plaintext */
+ 	TRY(plaintext_setup(&o_coap_pkt, e_options, e_options_cnt, &plaintext));
+ 
++	//if oscore_msg_inner_compression is given to our func we enable Inner compression plaintext here
++    if (oscore_msg_inner_compression != NULL) {
++        if (!oscore_msg_inner_compression(plaintext.ptr, &(plaintext.len)))
++            return schc_inner_comp_error;
++    }
++
+ 	/* Generate ciphertext array */
+-	BYTE_ARRAY_NEW(ciphertext, MAX_CIPHERTEXT_LEN,
+-		       plaintext.len + AUTH_TAG_LEN);
++	BYTE_ARRAY_NEW(ciphertext, MAX_CIPHERTEXT_LEN, MAX_CIPHERTEXT_LEN);
+ 
+ 	if (ECHO_VERIFY == c->rrc.echo_state_machine) {
+ 		/* A server prepares a response with ECHO challenge after the reboot. */
+diff --git a/src/oscore/nonce.c b/src/oscore/nonce.c
+index f8b8a90..9e9750d 100644
+--- a/src/oscore/nonce.c
++++ b/src/oscore/nonce.c
+@@ -28,8 +28,9 @@ enum err create_nonce(struct byte_array *id_piv, struct byte_array *piv,
+ 
+ 	/* "2. left-padding the ID_PIV in network byte order with zeroes to exactly nonce length minus 6 bytes," */
+ 
+-	uint8_t padded_id_piv[NONCE_LEN - MAX_PIV_LEN - 1] = { 0 };
+-	const uint8_t padded_id_piv_len = sizeof(padded_id_piv);
++	uint8_t padded_id_piv[nonce->len - MAX_PIV_LEN - 1];
++	memset(padded_id_piv, 0, sizeof(padded_id_piv));
++	const uint32_t padded_id_piv_len = sizeof(padded_id_piv);
+ 	TRY(_memcpy_s(&padded_id_piv[sizeof(padded_id_piv) - id_piv->len],
+ 		      id_piv->len, id_piv->ptr, id_piv->len));
+ 
+diff --git a/src/oscore/oscore2coap.c b/src/oscore/oscore2coap.c
+index 97a07bc..5f1beed 100644
+--- a/src/oscore/oscore2coap.c
++++ b/src/oscore/oscore2coap.c
+@@ -255,9 +255,10 @@ decrypt_wrapper(struct byte_array *ciphertext, struct byte_array *plaintext,
+ 		struct context *c,
+ 		struct compressed_oscore_option *new_nonce_oscore_option,
+ 		struct o_coap_packet *input_oscore,
+-		struct o_coap_packet *output_coap)
++		struct o_coap_packet *output_coap,
++		plaintext_cb_t oscore_msg_inner_decompression)
+ {
+-	BYTE_ARRAY_NEW(new_nonce, NONCE_LEN, NONCE_LEN);
++	BYTE_ARRAY_NEW(new_nonce, c->rrc.nonce.len, c->rrc.nonce.len);
+ 	struct byte_array nonce;
+ 
+ 	/* Read necessary fields from the input packet. */
+@@ -301,9 +302,14 @@ decrypt_wrapper(struct byte_array *ciphertext, struct byte_array *plaintext,
+ 	TRY(oscore_cose_decrypt(ciphertext, plaintext, &nonce, &aad,
+ 				&c->rc.recipient_key));
+ 
++	if (oscore_msg_inner_decompression != NULL) {
++		if (!oscore_msg_inner_decompression(plaintext->ptr, &plaintext->len))
++			return schc_inner_decomp_error;
++	}
++
+ 	/* Update nonce only after successful decryption (for handling future responses) */
+ 	if (NULL != new_nonce_oscore_option) {
+-		TRY(byte_array_cpy(&c->rrc.nonce, &nonce, NONCE_LEN));
++		TRY(byte_array_cpy(&c->rrc.nonce, &nonce, c->rrc.nonce.len));
+ 	}
+ 
+ 	/* Generate corresponding CoAP packet */
+@@ -325,7 +331,7 @@ decrypt_wrapper(struct byte_array *ciphertext, struct byte_array *plaintext,
+ }
+ 
+ enum err oscore2coap(uint8_t *buf_in, uint32_t buf_in_len, uint8_t *buf_out,
+-		     uint32_t *buf_out_len, struct context *c)
++		     uint32_t *buf_out_len, struct context *c, plaintext_cb_t oscore_msg_inner_decompression)
+ {
+ 	struct o_coap_packet oscore_packet;
+ 	struct compressed_oscore_option oscore_option;
+@@ -353,8 +359,8 @@ enum err oscore2coap(uint8_t *buf_in, uint32_t buf_in_len, uint8_t *buf_out,
+ 
+ 	/* Setup buffer for the plaintext. The plaintext is shorter than the 
+ 	ciphertext because of the authentication tag*/
+-	uint32_t plaintext_bytes_len = ciphertext->len - AUTH_TAG_LEN;
+-	BYTE_ARRAY_NEW(plaintext, MAX_PLAINTEXT_LEN, plaintext_bytes_len);
++	// uint32_t plaintext_bytes_len = ciphertext->len - AUTH_TAG_LEN;
++	BYTE_ARRAY_NEW(plaintext, MAX_PLAINTEXT_LEN, MAX_PLAINTEXT_LEN);
+ 	/* TODO plaintext can be moved inside decrypt_wrapper to simplify the code.
+ 	   To do so, refactor of echo_val_is_fresh is needed, to operate on o_coap_packet. */
+ 
+@@ -388,7 +394,7 @@ enum err oscore2coap(uint8_t *buf_in, uint32_t buf_in_len, uint8_t *buf_out,
+ 
+ 		/* Decrypt packet using new nonce based on the packet */
+ 		TRY(decrypt_wrapper(ciphertext, &plaintext, c, &oscore_option,
+-				    &oscore_packet, &output_coap));
++				    &oscore_packet, &output_coap, oscore_msg_inner_decompression));
+ 
+ 		if (ECHO_REBOOT == c->rrc.echo_state_machine) {
+ 			/* Abort the execution if this is the the first request after reboot.
+@@ -438,7 +444,8 @@ enum err oscore2coap(uint8_t *buf_in, uint32_t buf_in_len, uint8_t *buf_out,
+ 				TRY(decrypt_wrapper(ciphertext, &plaintext, c,
+ 						    &oscore_option,
+ 						    &oscore_packet,
+-						    &output_coap));
++						    &output_coap,
++						    oscore_msg_inner_decompression));
+ 
+ 				/*update replay protection value in context*/
+ 				TRY(notification_number_update(
+@@ -456,12 +463,14 @@ enum err oscore2coap(uint8_t *buf_in, uint32_t buf_in_len, uint8_t *buf_out,
+ 				TRY(decrypt_wrapper(ciphertext, &plaintext, c,
+ 						    &oscore_option,
+ 						    &oscore_packet,
+-						    &output_coap));
++						    &output_coap,
++						    oscore_msg_inner_decompression));
+ 			} else {
+ 				/*response without PIV*/
+ 				TRY(decrypt_wrapper(ciphertext, &plaintext, c,
+ 						    NULL, &oscore_packet,
+-						    &output_coap));
++						    &output_coap,
++						    oscore_msg_inner_decompression));
+ 			}
+ 		}
+ 	}
+diff --git a/src/oscore/oscore_cose.c b/src/oscore/oscore_cose.c
+index 98aa21c..3a51c4d 100644
+--- a/src/oscore/oscore_cose.c
++++ b/src/oscore/oscore_cose.c
+@@ -96,7 +96,7 @@ enum err oscore_cose_encrypt(struct byte_array *in_plaintext,
+ 	PRINT_ARRAY("aad enc structure", aad.ptr, aad.len);
+ 
+ 	struct byte_array tag =
+-		BYTE_ARRAY_INIT(out_ciphertext->ptr + in_plaintext->len, 8);
++		BYTE_ARRAY_INIT(out_ciphertext->ptr + in_plaintext->len, out_ciphertext->len - in_plaintext->len);
+ 
+ 	out_ciphertext->len -= tag.len;
+ 	TRY(aead(ENCRYPT, in_plaintext, key, nonce, &aad, out_ciphertext,
+diff --git a/src/oscore/security_context.c b/src/oscore/security_context.c
+index 78837a6..1e50f62 100644
+--- a/src/oscore/security_context.c
++++ b/src/oscore/security_context.c
+@@ -101,24 +101,34 @@ static enum err derive_recipient_key(struct common_context *cc,
+ 	return ok;
+ }
+ 
++// Defined in supported_algorithms.c
++aead_conf_t* find_aead_conf(const struct oscore_init_params *params);
++
++hkdf_conf_t* find_hkdf_conf(const struct oscore_init_params *params);
++
+ enum err oscore_context_init(struct oscore_init_params *params,
+ 			     struct context *c)
+ {
+ 	/*derive common context************************************************/
+ 
+-	if (params->aead_alg != OSCORE_AES_CCM_16_64_128) {
++	const aead_conf_t* aead_conf = find_aead_conf(params);
++	if (aead_conf == NULL) {
+ 		return oscore_invalid_algorithm_aead;
+-	} else {
+-		c->cc.aead_alg =
+-			OSCORE_AES_CCM_16_64_128; /*that's the default*/
++	}
++	if (aead_conf->key_len > sizeof(c->rc.recipient_key_buf)
++		|| aead_conf->key_len > sizeof(c->sc.sender_key_buf)
++		|| aead_conf->nonce_len > sizeof(c->rrc.nonce_buf)) {
++		return buffer_to_small;
+ 	}
+ 
+-	if (params->hkdf != OSCORE_SHA_256) {
++	const hkdf_conf_t* hkdf_conf = find_hkdf_conf(params);
++	if (hkdf_conf == NULL) {
+ 		return oscore_invalid_algorithm_hkdf;
+-	} else {
+-		c->cc.kdf = OSCORE_SHA_256; /*that's the default*/
+ 	}
+ 
++	c->cc.aead_alg = aead_conf->aead_name;
++	c->cc.kdf = hkdf_conf->hkdf_name;
++
+         c->cc.fresh_master_secret_salt = params->fresh_master_secret_salt;
+ 	c->cc.master_secret = params->master_secret;
+ 	c->cc.master_salt = params->master_salt;
+@@ -134,13 +144,15 @@ enum err oscore_context_init(struct oscore_init_params *params,
+ 	c->rc.recipient_id.ptr = c->rc.recipient_id_buf;
+ 	memcpy(c->rc.recipient_id.ptr, params->recipient_id.ptr,
+ 	       params->recipient_id.len);
+-	c->rc.recipient_key.len = sizeof(c->rc.recipient_key_buf);
++	// c->rc.recipient_key.len = sizeof(c->rc.recipient_key_buf);
++	c->rc.recipient_key.len = aead_conf->key_len;
+ 	c->rc.recipient_key.ptr = c->rc.recipient_key_buf;
+ 	TRY(derive_recipient_key(&c->cc, &c->rc));
+ 
+ 	/*derive Sender Context************************************************/
+ 	c->sc.sender_id = params->sender_id;
+-	c->sc.sender_key.len = sizeof(c->sc.sender_key_buf);
++	// c->sc.sender_key.len = sizeof(c->sc.sender_key_buf);
++	c->sc.sender_key.len = aead_conf->key_len;
+ 	c->sc.sender_key.ptr = c->sc.sender_key_buf;
+ 	struct nvm_key_t nvm_key = { .sender_id = c->sc.sender_id,
+ 				     .recipient_id = c->rc.recipient_id,
+@@ -151,7 +163,8 @@ enum err oscore_context_init(struct oscore_init_params *params,
+ 
+ 	/*set up the request response context**********************************/
+ 	oscore_interactions_init(c->rrc.interactions);
+-	c->rrc.nonce.len = sizeof(c->rrc.nonce_buf);
++	// c->rrc.nonce.len = sizeof(c->rrc.nonce_buf);
++	c->rrc.nonce.len = aead_conf->nonce_len;
+ 	c->rrc.nonce.ptr = c->rrc.nonce_buf;
+ 	c->rrc.echo_opt_val.len = sizeof(c->rrc.echo_opt_val_buf);
+ 	c->rrc.echo_opt_val.ptr = c->rrc.echo_opt_val_buf;
+diff --git a/src/oscore/supported_algorithms.c b/src/oscore/supported_algorithms.c
+new file mode 100644
+index 0000000..1791854
+--- /dev/null
++++ b/src/oscore/supported_algorithms.c
+@@ -0,0 +1,62 @@
++#include "oscore/supported_algorithm.h"
++
++#include "oscore.h"
++
++static aead_conf_t aeads[] = {
++    {
++        .aead_name = OSCORE_ASCONAEAD128,
++        .key_len = 16,
++        .nonce_len = 16,
++        .tag_len = 16,
++    },
++{
++        .aead_name = OSCORE_ASCONAEAD128_64,
++        .key_len = 16,
++        .nonce_len = 16,
++        .tag_len = 8,
++    },
++{
++        .aead_name = OSCORE_ASCONAEAD128_32,
++        .key_len = 16,
++        .nonce_len = 16,
++        .tag_len = 4,
++    },
++{
++        .aead_name = OSCORE_AES_CCM_16_64_128,
++        .key_len = 16,
++        .nonce_len = 13,
++        .tag_len = 8
++    },
++};
++
++static int aeads_len = sizeof(aeads) / sizeof(aead_conf_t);
++
++aead_conf_t* find_aead_conf(const struct oscore_init_params *params) {
++    for (int i = 0; i < aeads_len; i++) {
++        enum AEAD_algorithm curr_aead = aeads[i].aead_name;
++        if (curr_aead == params->aead_alg) {
++            return &aeads[i];
++        }
++    }
++
++    return NULL;
++}
++
++static hkdf_conf_t hkdfs[] = {
++    {
++        .hkdf_name = OSCORE_SHA_256
++    }
++};
++
++static int hkdfs_len = sizeof(hkdfs) / sizeof(hkdf_conf_t);
++
++hkdf_conf_t* find_hkdf_conf(const struct oscore_init_params *params) {
++    for (int i = 0; i < hkdfs_len; i++) {
++        enum hkdf curr_hkdf = hkdfs[i].hkdf_name;
++        if (curr_hkdf == params->hkdf) {
++            return &hkdfs[i];
++        }
++    }
++
++    return NULL;
++}
+\ No newline at end of file
