@@ -103,9 +103,9 @@ int main() {
     // fragmentation profile.
     // mgt_set_mode(SDK_DEVICE_MODE);
 
-    if (mgt_initialize(&mgt_callbacks, mgt_mem_block, MEM_BLOCK_SIZE,
-                       MAX_MTU_SIZE, MAX_PAYLOAD_SIZE) != MGT_SUCCESS) {
-        PRINT_MSG("Error : mgt_initialize() failed\n");
+    mgt_status_t mgt_status = mgt_initialize(&mgt_callbacks, mgt_mem_block, MEM_BLOCK_SIZE, MAX_MTU_SIZE, MAX_PAYLOAD_SIZE);
+    if (mgt_status != MGT_SUCCESS) {
+        PRINT_MSG("Error : mgt_initialize() failed (error %d)\n", mgt_status);
         goto error;
     }
 

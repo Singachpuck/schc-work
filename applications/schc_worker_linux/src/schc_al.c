@@ -65,7 +65,7 @@ int schc_al_init() {
         return 0;
     }
 
-    tun_fd = create_tun("schc_tun0", tun_name, sizeof(tun_name));
+    tun_fd = create_tun(TUN_NAME, tun_name, sizeof(tun_name));
     if (tun_fd < 0) {
         return -1;
     }
