@@ -13,7 +13,7 @@ set(L2_STACK "ahoi_posix_host" CACHE STRING "")
 set(TOOLCHAIN "gcc-native" CACHE STRING "")
 set(TARGET "default" CACHE STRING "")
 set(COMP_API_BASE "${CMAKE_CURRENT_SOURCE_DIR}/libs/schc_comp_apis" CACHE STRING "")
-set(FRAGMENTATION_API "empty" CACHE STRING "")
+set(FRAGMENTATION_API "nocomp" CACHE STRING "")
 set(FRAG_API_BASE "${CMAKE_CURRENT_SOURCE_DIR}/libs/schc_frag_apis" CACHE STRING "")
 set(EXTENSION_API "default" CACHE STRING "")
 
