@@ -1,7 +1,10 @@
 [requires]
 cmocka/1.1.8
 ahoi-module/1.0.0-3
-ascon-c/1.4-alpha.0@dochkas/experimental
+ascon-c/1.4-alpha.0-7@dochkas/experimental
+[options]
+# ascon-c/*:with_asconmacv13=True
+ascon-c/*:inline=False
 [generators]
 CMakeDeps
 CMakeToolchain

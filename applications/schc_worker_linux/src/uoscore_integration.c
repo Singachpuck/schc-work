@@ -215,7 +215,7 @@ bool oscore_security_context_init(uint8_t *oscore_master_secret,
             oscore_master_salt
         },
         OSCORE_ASCONAEAD128_32,
-        OSCORE_SHA_256
+        OSCORE_ASCON_256
     };
     enum err r = oscore_context_init(&params_sender, &osc_ctx);
     if (r != ok)
@@ -228,9 +228,6 @@ bool oscore_security_context_init(uint8_t *oscore_master_secret,
 
 coap_oscore_res_t coap_to_oscore(uint8_t *coap_packet, uint16_t coap_packet_size, uint8_t *out, uint32_t *out_size)
 {
-    // uint8_t oscore_buf[OSCORE_MAX_PAYLOAD_SIZE] = {0};
-    // uint16_t oscore_buf_len = 0;
-
     plaintext_cb_t inner_cb = oscore_inner_schc_enabled ? oscore_msg_inner_compression : NULL;
     enum err r = coap2oscore(coap_packet, coap_packet_size, out, out_size, &osc_ctx, inner_cb);
     if (r != ok)
@@ -238,16 +235,11 @@ coap_oscore_res_t coap_to_oscore(uint8_t *coap_packet, uint16_t coap_packet_size
         printf("Error : coap2oscore: %d\n", r);
         return uoscore_err_to_res(r);
     }
-    // if (memcpy(out, oscore_buf, oscore_buf_len) == NULL)
-        // return CO_COAP_ERROR;
-    // *out_size = oscore_buf_len;
     return CO_SUCCESS;
 }
 
 coap_oscore_res_t oscore_to_coap(uint8_t *oscore_packet, uint16_t oscore_packet_size, uint8_t *out, uint32_t *out_size)
 {
-    // uint8_t coap_rx_buf[OSCORE_MAX_PAYLOAD_SIZE] = {0};
-    // uint16_t coap_rx_buf_len = sizeof(coap_rx_buf);
     plaintext_cb_t inner_cb = oscore_inner_schc_enabled ? oscore_msg_inner_decompression : NULL;
     //convert oscore to coap
     enum err r = oscore2coap(oscore_packet, oscore_packet_size, out, out_size, &osc_ctx, inner_cb);
