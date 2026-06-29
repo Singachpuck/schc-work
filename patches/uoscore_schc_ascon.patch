@@ -34,6 +34,21 @@ index f88feef..38b2fbb 100644
  
  C_INCLUDES += -Iinc
  
+diff --git a/inc/common/crypto_wrapper.h b/inc/common/crypto_wrapper.h
+index b87e783..be83eff 100644
+--- a/inc/common/crypto_wrapper.h
++++ b/inc/common/crypto_wrapper.h
+@@ -129,6 +129,10 @@ enum err hkdf_sha_256(struct byte_array *master_secret,
+ 		      struct byte_array *master_salt, struct byte_array *info,
+ 		      struct byte_array *out);
+ 
++enum err hkdf_ascon_hash_256(struct byte_array *master_secret,
++			   struct byte_array *master_salt,
++			   struct byte_array *info, struct byte_array *out);
++
+ #ifdef EDHOC_MOCK_CRYPTO_WRAPPER
+ /*
+  * Elliptic curve based signature algorithms generate signatures that are not 
 diff --git a/inc/common/oscore_edhoc_error.h b/inc/common/oscore_edhoc_error.h
 index 244e9c2..6131344 100644
 --- a/inc/common/oscore_edhoc_error.h
@@ -57,6 +72,22 @@ index 244e9c2..6131344 100644
  };
  
  /*This macro checks if a function returns an error and if so it propagates 
+diff --git a/inc/edhoc/suites.h b/inc/edhoc/suites.h
+index 03afc7a..72074b7 100644
+--- a/inc/edhoc/suites.h
++++ b/inc/edhoc/suites.h
+@@ -29,7 +29,10 @@ enum aead_alg {
+ 	AES_CCM_16_128_128 = 30,
+ };
+ 
+-enum hash_alg { SHA_256 = -16 };
++enum hash_alg {
++	SHA_256 = -16,
++	ASCON_HASH_256 = -54
++};
+ 
+ enum ecdh_alg {
+ 	P256 = 1,
 diff --git a/inc/oscore.h b/inc/oscore.h
 index f3b7e3d..745c654 100644
 --- a/inc/oscore.h
@@ -88,10 +119,10 @@ index f3b7e3d..745c654 100644
  
  #endif
 diff --git a/inc/oscore/supported_algorithm.h b/inc/oscore/supported_algorithm.h
-index 8d65292..a49b264 100644
+index 8d65292..30eb1eb 100644
 --- a/inc/oscore/supported_algorithm.h
 +++ b/inc/oscore/supported_algorithm.h
-@@ -12,6 +12,8 @@
+@@ -12,19 +12,36 @@
  #ifndef SUPPORTED_ALGORITHM_H
  #define SUPPORTED_ALGORITHM_H
  
@@ -100,7 +131,9 @@ index 8d65292..a49b264 100644
  /*default HKDF SHA256*/
  enum hkdf {
  	OSCORE_SHA_256,
-@@ -20,11 +22,25 @@ enum hkdf {
++	OSCORE_ASCON_256
+ };
+ 
  enum AEAD_algorithm {
  	//AES-CCM mode 128-bit key, 64-bit tag, 13-byte nonce
  	OSCORE_AES_CCM_16_64_128 = 10,
@@ -165,6 +198,20 @@ index 0bc6951..c78667f 100644
 +#CRYPTO_ENGINE += -DCOMPACT25519
 +#CRYPTO_ENGINE += -DMBEDTLS
 +CRYPTO_ENGINE += -DASCON
+diff --git a/src/edhoc/suites.c b/src/edhoc/suites.c
+index 8272926..cfe6483 100644
+--- a/src/edhoc/suites.c
++++ b/src/edhoc/suites.c
+@@ -69,6 +69,9 @@ uint32_t get_hash_len(enum hash_alg alg)
+ 	case SHA_256:
+ 		return 32;
+ 		break;
++	case ASCON_HASH_256:
++		return 32;
++		break;
+ 	}
+ 	return 0;
+ }
 diff --git a/src/oscore/coap2oscore.c b/src/oscore/coap2oscore.c
 index 1ef588b..935e122 100644
 --- a/src/oscore/coap2oscore.c
@@ -332,10 +379,21 @@ index 98aa21c..3a51c4d 100644
  	out_ciphertext->len -= tag.len;
  	TRY(aead(ENCRYPT, in_plaintext, key, nonce, &aad, out_ciphertext,
 diff --git a/src/oscore/security_context.c b/src/oscore/security_context.c
-index 78837a6..1e50f62 100644
+index 78837a6..7e46998 100644
 --- a/src/oscore/security_context.c
 +++ b/src/oscore/security_context.c
-@@ -101,24 +101,34 @@ static enum err derive_recipient_key(struct common_context *cc,
+@@ -52,6 +52,10 @@ STATIC enum err derive(struct common_context *cc, struct byte_array *id,
+ 		TRY(hkdf_sha_256(&cc->master_secret, &cc->master_salt, &info,
+ 				 out));
+ 		break;
++	case OSCORE_ASCON_256:
++		TRY(hkdf_ascon_hash_256(&cc->master_secret, &cc->master_salt, &info,
++		 out));
++		break;
+ 	default:
+ 		return oscore_unknown_hkdf;
+ 		break;
+@@ -101,24 +105,34 @@ static enum err derive_recipient_key(struct common_context *cc,
  	return ok;
  }
  
@@ -377,7 +435,7 @@ index 78837a6..1e50f62 100644
          c->cc.fresh_master_secret_salt = params->fresh_master_secret_salt;
  	c->cc.master_secret = params->master_secret;
  	c->cc.master_salt = params->master_salt;
-@@ -134,13 +144,15 @@ enum err oscore_context_init(struct oscore_init_params *params,
+@@ -134,13 +148,15 @@ enum err oscore_context_init(struct oscore_init_params *params,
  	c->rc.recipient_id.ptr = c->rc.recipient_id_buf;
  	memcpy(c->rc.recipient_id.ptr, params->recipient_id.ptr,
  	       params->recipient_id.len);
@@ -395,7 +453,7 @@ index 78837a6..1e50f62 100644
  	c->sc.sender_key.ptr = c->sc.sender_key_buf;
  	struct nvm_key_t nvm_key = { .sender_id = c->sc.sender_id,
  				     .recipient_id = c->rc.recipient_id,
-@@ -151,7 +163,8 @@ enum err oscore_context_init(struct oscore_init_params *params,
+@@ -151,7 +167,8 @@ enum err oscore_context_init(struct oscore_init_params *params,
  
  	/*set up the request response context**********************************/
  	oscore_interactions_init(c->rrc.interactions);
@@ -407,10 +465,10 @@ index 78837a6..1e50f62 100644
  	c->rrc.echo_opt_val.ptr = c->rrc.echo_opt_val_buf;
 diff --git a/src/oscore/supported_algorithms.c b/src/oscore/supported_algorithms.c
 new file mode 100644
-index 0000000..1791854
+index 0000000..43d3c81
 --- /dev/null
 +++ b/src/oscore/supported_algorithms.c
-@@ -0,0 +1,62 @@
+@@ -0,0 +1,65 @@
 +#include "oscore/supported_algorithm.h"
 +
 +#include "oscore.h"
@@ -458,6 +516,9 @@ index 0000000..1791854
 +static hkdf_conf_t hkdfs[] = {
 +    {
 +        .hkdf_name = OSCORE_SHA_256
++    },
++    {
++        .hkdf_name = OSCORE_ASCON_256
 +    }
 +};
 +
