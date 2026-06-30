@@ -3,6 +3,10 @@
 
 #define L2_STACK_${L2_STACK}
 
+#cmakedefine L2_ADDR "${L2_ADDR}"
+#cmakedefine L2_MAX_MTU ${L2_MAX_MTU}
+#cmakedefine L2_TX_DELAY ${L2_TX_DELAY}
+
 #cmakedefine TUN_NAME "${TUN_NAME}"
 
 #cmakedefine IPv6_PREFIX "${IPv6_PREFIX}"
@@ -14,6 +18,7 @@
 #cmakedefine OSCORE_PROXY_ENABLED
 #cmakedefine REGULAR_COMP
 #cmakedefine OSCORE_INNER_MAX_SIZE ${OSCORE_INNER_MAX_SIZE}
+#cmakedefine DROP_NON_COAP
 #cmakedefine OSCORE_DROP_ON_ERROR
 
 // #cmakedefine OSCORE_MASTER_SECRET "${OSCORE_MASTER_SECRET}"

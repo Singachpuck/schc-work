@@ -1,4 +1,8 @@
-set(TUN_NAME "tun0" CACHE STRING "")
+set(L2_ADDR "::0A" CACHE STRING "")
+set(L2_MAX_MTU 20 CACHE STRING "")
+set(L2_TX_DELAY 300 CACHE STRING "")
+
+set(TUN_NAME "schc_tun0" CACHE STRING "")
 
 set(IPv6_PREFIX "fe80" CACHE STRING "")
 set(IPv6_PREFIX_LEN "64" CACHE STRING "")
@@ -6,15 +10,13 @@ set(IPv6_IID "::10" CACHE STRING "")
 set(IPv6_PEER_PREFIX "fe80" CACHE STRING "")
 set(IPv6_PEER_PREFIX_LEN "64" CACHE STRING "")
 set(IPv6_PEER_IID "::11" CACHE STRING "")
-set(IPv6_MAX_PACKET_SIZE 255 CACHE STRING "")
+set(IPv6_MAX_PACKET_SIZE 256 CACHE STRING "")
 
-option(OSCORE_PROXY_ENABLED "dqwdqwdw" OFF)
-option(REGULAR_COMP "" ON)
-option(OSCORE_INNER_MAX_SIZE 128)
-option(OSCORE_OUTER_MAX_SIZE 192)
-option(OSCORE_DROP_ON_ERROR "" ON) # If OFF, sends plain CoAP
-
-# set(OSCORE_MASTER_SECRET "0102030405060708090a0b0c0d0e0f10" CACHE STRING "OSCORE Master Secret")
-# set(OSCORE_MASTER_SALT "9e7ca92223786340" CACHE STRING "OSCORE Master Salt")
-
-set(NVM_FILENAME "schc_nvm.conf" CACHE STRING "Filename for Non-Volatile Memory storage")
+option(DROP_NON_COAP "" ON)
+if (OSCORE_PROXY_ENABLED)
+    option(OSCORE_DROP_ON_ERROR "" ON) # If OFF, sends plain CoAP
+    option(REGULAR_COMP "" ON)
+    set(OSCORE_INNER_MAX_SIZE 128 CACHE STRING "")
+    set(OSCORE_OUTER_MAX_SIZE 192 CACHE STRING "")
+    set(NVM_FILENAME "schc_nvm.conf" CACHE STRING "Filename for Non-Volatile Memory storage")
+endif ()

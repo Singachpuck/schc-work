@@ -8,22 +8,21 @@
 #include "schc_al.h"
 
 // TODO: Consider buffer sizes
-#define RECEIVE_BUFFER_SIZE 1500
-
 // Assume (MAX_PAYLOAD_SIZE + MGT_PROTO_SIZE) must be 4-bytes aligned
-#define MAX_PAYLOAD_SIZE RECEIVE_BUFFER_SIZE
-#define MAX_MTU_SIZE 256 // Assume MAX_MTU_SIZE must be 4-bytes aligned
+#define MAX_PAYLOAD_SIZE IPv6_MAX_PACKET_SIZE
 
 // Memory block size provided to mgt_initialize.
 #define MEM_BLOCK_SIZE                                                         \
-(MAX_MTU_SIZE * 4u + (MAX_PAYLOAD_SIZE + MGT_PROTO_SIZE) * 4u +              \
-MGT_SCHC_ACK_PACKET_SIZE * 3u + 64 * 2u)
+    (L2_MAX_MTU * 4u + (MAX_PAYLOAD_SIZE + MGT_PROTO_SIZE) * 4u +              \
+    MGT_SCHC_ACK_PACKET_SIZE * 3u + 64 * 2)
 
 bool mgt_process_request = false;
 static uint8_t mgt_mem_block[MEM_BLOCK_SIZE];
 
 //static const char* ahoi_port = "/run/user/1000/slv_cons";
 static const char* ahoi_port = "/run/user/1000/slv_triggered_prod";
+
+static const uint8_t ahoi_id = 0x0A;
 
 static TimerEvent_t sdk_timers[3];
 static const net_callbacks_t *net_callbacks;
@@ -88,11 +87,12 @@ int main() {
     TimerInit(&sdk_timers[1], sdk_timer_2_event);
     TimerInit(&sdk_timers[2], sdk_timer_3_event);
 
-    l2_set_mtu(20);
+    l2_set_mtu(L2_MAX_MTU);
+    l2_set_next_tx_delay(L2_TX_DELAY);
 
 #ifdef L2_STACK_ahoi_posix_host
     l2_set_serial_port(ahoi_port);
-    l2_set_iid(0x0A);
+    l2_set_iid(ahoi_id);
 #endif
 
 #ifdef L2_STACK_udp6
@@ -103,7 +103,7 @@ int main() {
     // fragmentation profile.
     // mgt_set_mode(SDK_DEVICE_MODE);
 
-    mgt_status_t mgt_status = mgt_initialize(&mgt_callbacks, mgt_mem_block, MEM_BLOCK_SIZE, MAX_MTU_SIZE, MAX_PAYLOAD_SIZE);
+    mgt_status_t mgt_status = mgt_initialize(&mgt_callbacks, mgt_mem_block, MEM_BLOCK_SIZE, L2_MAX_MTU, MAX_PAYLOAD_SIZE);
     if (mgt_status != MGT_SUCCESS) {
         PRINT_MSG("Error : mgt_initialize() failed (error %d)\n", mgt_status);
         goto error;

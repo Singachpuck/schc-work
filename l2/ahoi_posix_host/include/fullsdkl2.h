@@ -170,6 +170,8 @@ void l2_set_serial_port(const char* port);
 
 void l2_set_iid(uint8_t val);
 
+void l2_set_next_tx_delay(uint32_t tx_delay_ms);
+
 void l2_deinit();
 
 /**

@@ -17,10 +17,9 @@
 
 #include <string.h>
 #include <stdlib.h>
-// #include "libcoap.h"
-#include "oscore.h"
-// #include "uoscore.h"
-// #include "common.h"
+
+#include <oscore.h>
+
 #include "net/udp.h"
 
 #include <fullsdkmgt.h>
@@ -28,7 +27,6 @@
 
 #include "schc_al_params.h"
 #include "oscore_proxy.h"
-// #include "platform.h"
 
 static uint8_t *SENDER_ID = NULL;
 static uint8_t SENDER_ID_LEN = 0;

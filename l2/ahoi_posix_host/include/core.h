@@ -3,11 +3,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-void l2_ahoi_set_mtu(uint16_t mtu);
-
-uint16_t l2_ahoi_get_mtu(void);
-
-
 l2_status_t l2_get_dutycycle(bool *value);
 
 l2_status_t l2_set_dutycycle(bool dutycycle_on);
@@ -38,4 +33,3 @@ l2a_status_t l2a_send_data(const uint8_t *p_data, uint16_t data_size);
 bool l2a_get_dev_iid(uint8_t **dev_iid);
 
 uint32_t l2a_get_next_tx_delay(uint16_t data_size);
-
