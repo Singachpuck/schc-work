@@ -42,6 +42,7 @@ target_link_libraries(${EXEC_NAME} PRIVATE
         ${NET_LIB}
         ${OSCORE_LIB}
         ${CRYPTO_SUITE}
+        ${UTIL_LIB}
 )
 target_include_directories(${EXEC_NAME} PRIVATE
         ${L2_INC_DIR}

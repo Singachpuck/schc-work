@@ -7,6 +7,10 @@
 #include "schc_al_params.h"
 #include "schc_al.h"
 
+#include "logging.h"
+
+static const char *TAG = "MAIN";
+
 // TODO: Consider buffer sizes
 // Assume (MAX_PAYLOAD_SIZE + MGT_PROTO_SIZE) must be 4-bytes aligned
 #define MAX_PAYLOAD_SIZE IPv6_MAX_PACKET_SIZE
@@ -19,8 +23,9 @@
 bool mgt_process_request = false;
 static uint8_t mgt_mem_block[MEM_BLOCK_SIZE];
 
-//static const char* ahoi_port = "/run/user/1000/slv_cons";
-static const char* ahoi_port = "/run/user/1000/slv_triggered_prod";
+// static const char* ahoi_port = "/run/user/1000/slv_cons";
+// static const char* ahoi_port = "/run/user/1000/slv_triggered_prod";
+static const char* ahoi_port = "/dev/ttyUSB0";
 
 static const uint8_t ahoi_id = 0x0A;
 
@@ -57,10 +62,10 @@ static void cb_mgt_processing_required(void) {
 
 static void cb_mgt_connectivity_state(mgt_status_t status) {
     if (status != MGT_SUCCESS) {
-        PRINT_MSG("connectivity KO (status %d)\n", status);
+        LOGERROR(TAG, "Connectivity KO (status %d)", status);
         return;
     }
-    PRINT_MSG("connectivity OK\n");
+    LOGINFO(TAG, "Connectivity OK");
 }
 
 static void cb_start_timer(uint8_t id, uint32_t duration) {
@@ -105,19 +110,19 @@ int main() {
 
     mgt_status_t mgt_status = mgt_initialize(&mgt_callbacks, mgt_mem_block, MEM_BLOCK_SIZE, L2_MAX_MTU, MAX_PAYLOAD_SIZE);
     if (mgt_status != MGT_SUCCESS) {
-        PRINT_MSG("Error : mgt_initialize() failed (error %d)\n", mgt_status);
+        LOGERROR(TAG, "mgt_initialize() failed (error %d)", mgt_status);
         goto error;
     }
 
     net_callbacks = schc_al_get_net_callbacks();
     const net_status_t status = net_initialize(net_callbacks);
     if (status != NET_SUCCESS) {
-        PRINT_MSG("Error : net_initialize() failed (status %d)\n", status);
+        LOGERROR(TAG, "net_initialize() failed (status %d)", status);
         goto error;
     }
 
     if (schc_al_init() != 0) {
-        PRINT_MSG("Error : schc_worker_init() failed\n");
+        LOGERROR(TAG, "schc_worker_init() failed");
         goto error;
     }
 
@@ -138,17 +143,19 @@ int main() {
             const mgt_status_t mgt_status = mgt_process();
 
             if (mgt_status != MGT_SUCCESS) {
-                PRINT_MSG("Error processing SCHC packet (%d)", mgt_status);
+                LOGERROR(TAG, "Error processing SCHC packet (status %d)", mgt_status);
             }
         }
         if (schc_al_is_processing_required()) {
             schc_al_process_status_t schc_al_status = schc_al_process();
             if (schc_al_status != SEND_DOWN_OK && schc_al_status != SEND_DOWN_BUSY) {
-                PRINT_MSG("schc_al>critical error\n");
+                LOGERROR(TAG, "schc_al_process critical error\n");
             }
         }
         platform_enter_low_power_ll();
     }
+    printf("\n");
+    LOGINFO(TAG, "Detected signal, terminating");
 
     terminate();
     return 0;
@@ -159,7 +166,7 @@ int main() {
 }
 
 static void terminate() {
-    PRINT_MSG("schc_al_main>Terminating the program\n");
+    LOGINFO(TAG, "Terminating the program");
     schc_al_terminate();
 #ifdef L2_STACK_ahoi_posix_host
     l2_deinit();

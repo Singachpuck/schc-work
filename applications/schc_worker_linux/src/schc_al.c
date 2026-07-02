@@ -17,6 +17,9 @@
 #include "net/net_helper.h"
 #include "schc_al_params.h"
 #include "oscore_proxy.h"
+#include "logging.h"
+
+static const char *TAG = "SCHC_AL";
 
 // TODO: Change to smaller
 // #define SCHC_AL_MAX_PACKET_SIZE
@@ -40,7 +43,7 @@ static uint8_t net_buffer[IPv6_MAX_PACKET_SIZE];
 static int run_cmd(const char *cmd) {
     const int rc = system(cmd);
     if (rc != 0) {
-        PRINT_MSG("schc_al>command failed: %s\n", cmd);
+        LOGERROR(TAG, "command failed: %s", cmd);
         return -1;
     }
     return 0;
@@ -49,16 +52,21 @@ static int run_cmd(const char *cmd) {
 static void schc_al_tun_received_handler(void) {
     event |= IP_PACKET_AVAILABLE;
     processing_required = true;
+
+    LOGINFO(TAG, "Received packet via tun, IP_PACKET_AVAILABLE event set");
 }
 
 int schc_al_init() {
     event = NO_EVENT;
     processing_required = false;
 
+    LOGINFO(TAG, "Initializing SCHC adaptation layer");
+
     // For now encoded in ascii
     if (!oscore_security_context_init((uint8_t*) OSCORE_MASTER_SECRET, OSCORE_MASTER_SECRET_LEN,
         (uint8_t*) OSCORE_MASTER_SALT, OSCORE_MASTER_SALT_LEN)) {
-        return -1;
+      LOGERROR(TAG, "Failed to create OSCORE secutiry context");  
+      return -1;
     }
 
     if (tun_fd >= 0) {
@@ -67,7 +75,8 @@ int schc_al_init() {
 
     tun_fd = create_tun(TUN_NAME, tun_name, sizeof(tun_name));
     if (tun_fd < 0) {
-        return -1;
+      LOGERROR(TAG, "Failed to create tun");
+      return -1;
     }
 
     char cmd[128];
@@ -75,6 +84,7 @@ int schc_al_init() {
     if (run_cmd(cmd) != 0) {
         close(tun_fd);
         tun_fd = -1;
+        LOGERROR(TAG, "Failed to set device up");
         return -1;
     }
 
@@ -82,6 +92,7 @@ int schc_al_init() {
     if (run_cmd(cmd) != 0) {
         close(tun_fd);
         tun_fd = -1;
+        LOGERROR(TAG, "Failed to set device address");
         return -1;
     }
 
@@ -90,11 +101,12 @@ int schc_al_init() {
     if (run_cmd(cmd) != 0) {
         close(tun_fd);
         tun_fd = -1;
+        LOGERROR(TAG, "Failed to set IP route");
         return -1;
     }
 
     if (!watch_fd_for_input(tun_fd, schc_al_tun_received_handler)) {
-        PRINT_MSG("schc_al>watch_fd_for_input() failed\n");
+        LOGERROR(TAG, "watch_fd_for_input() failed");
         close(tun_fd);
         tun_fd = -1;
         return -1;
@@ -125,14 +137,14 @@ static schc_al_process_status_t schc_al_send_down() {
 
     if (pkt_len < 0) {
         if (errno != EAGAIN && errno != EWOULDBLOCK) {
-            PRINT_MSG("schc_al>recv() failed: %s\n", strerror(errno));
+            LOGERROR(TAG, "recv() failed: %s", strerror(errno));
             return SEND_DOWN_INTERNAL_ERROR;
         }
         return SEND_DOWN_OK;
     }
 
     if (!is_ipv6_udp_packet(net_buffer, (size_t) pkt_len)) {
-        PRINT_MSG("schc_al>discard non IPv6/UDP packet\n");
+        LOGWARN(TAG, "discard non IPv6/UDP packet");
         return SEND_DOWN_OK;
     }
 
@@ -140,7 +152,7 @@ static schc_al_process_status_t schc_al_send_down() {
     uint32_t coap_packet_len = ipv6_udp_payload_len(net_buffer);
     if (!is_coap_packet(coap_packet, coap_packet_len)) {
 #ifdef DROP_NON_COAP
-        PRINT_MSG("schc_al>discard non CoAP packet\n");
+        LOGWARN(TAG, "discard non CoAP packet");
         return SEND_DOWN_OK;
 #endif
     } else {
@@ -151,7 +163,7 @@ static schc_al_process_status_t schc_al_send_down() {
         if (st != CO_SUCCESS) {
             oscore_len = coap_packet_len;
 #ifdef OSCORE_DROP_ON_ERROR
-            PRINT_MSG("schc_al>OSCORE encryption failed. Dropping packet\n");
+            LOGERROR(TAG, "OSCORE encryption failed. Dropping packet");
             return SEND_DOWN_OSCORE_ERROR;
 #endif
         }
@@ -166,13 +178,13 @@ static schc_al_process_status_t schc_al_send_down() {
 #endif
     }
 
-    PRINT_MSG("Before fragmentation\n");
+    LOGINFO(TAG, "Data before fragmentation");
     PRINT_HEX_BUF(net_buffer, pkt_len);
 
     event |= ONGOING_TRANSMISSION;
     const net_status_t status = net_sendto(net_buffer, pkt_len);
     if (status != NET_SUCCESS) {
-        PRINT_MSG("schc_al>net_sendto() failed (status %d)\n", status);
+        LOGERROR(TAG, "net_sendto() failed (status %d)", status);
         event &= ~ONGOING_TRANSMISSION;
         return SEND_DOWN_INTERNAL_ERROR;
     }
@@ -193,9 +205,9 @@ schc_al_process_status_t schc_al_process() {
 static void net_transmission_result(net_status_t status, uint16_t error) {
     (void) error;
     if (status != NET_SUCCESS) {
-        PRINT_MSG("schc_al>transmission failed (status %d)\n", status);
+        LOGERROR(TAG, "transmission failed (status %d)", status);
     } else {
-        PRINT_MSG("schc_al>transmission success (status %d)\n", status);
+        LOGINFO(TAG, "transmission success (status %d)", status);
     }
     event &= ~ONGOING_TRANSMISSION;
 }
@@ -206,7 +218,7 @@ static int schc_al_forward_up(uint8_t *buffer, uint16_t data_size) {
     }
 
     if (!is_ipv6_udp_packet(buffer, data_size)) {
-        PRINT_MSG("schc_al_up>discard non IPv6/UDP packet\n");
+        LOGWARN(TAG, "discard non IPv6/UDP packet");
         return 0;
     }
 
@@ -217,7 +229,7 @@ static int schc_al_forward_up(uint8_t *buffer, uint16_t data_size) {
         // OSCORE to CoAP
         coap_oscore_res_t st = oscore_to_coap(coap_packet, coap_packet_len, buffer, &coap_packet_len);
         if (st != CO_NOT_OSCORE && st != CO_SUCCESS) {
-            PRINT_MSG("schc_al_up>discard invalid OSCORE packet up\n");
+            LOGWARN(TAG, "discard invalid OSCORE packet up");
             return -1;
         }
         if (st != CO_NOT_OSCORE) {
@@ -228,14 +240,14 @@ static int schc_al_forward_up(uint8_t *buffer, uint16_t data_size) {
 #endif
     } else {
 #ifdef DROP_NON_COAP
-        PRINT_MSG("schc_al_up>discard non CoAP packet\n");
+        LOGWARN(TAG, "discard non CoAP packet");
         return 0;
 #endif
     }
 
     ssize_t sent_bytes = write(tun_fd, buffer, data_size);
     if (sent_bytes < 0) {
-        PRINT_MSG("schc_al_up>write() failed: %s\n", strerror(errno));
+        LOGERROR(TAG, "write() failed: %s", strerror(errno));
         return -1;
     }
 
@@ -264,6 +276,8 @@ int schc_al_terminate() {
         close(tun_fd);
         tun_fd = -1;
     }
+
+    LOGINFO(TAG, "Terminating SCHC adaptation layer");
 
     event = NO_EVENT;
     processing_required = false;

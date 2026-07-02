@@ -11,4 +11,4 @@ target_include_directories(${L2_STACK_LIB}
         ${FULLSDK_INC_DIR}
         ${PLATFORM_INC_DIR})
 
-target_link_libraries(${L2_STACK_LIB} PRIVATE ${AHOI_LIB} ${IO_LIB})
+target_link_libraries(${L2_STACK_LIB} PRIVATE ${AHOI_LIB} ${IO_LIB} ${UTIL_LIB})
