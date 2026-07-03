@@ -1,5 +1,9 @@
-add_library(${UTIL_LIB} INTERFACE)
+add_library(${UTIL_LIB})
 
-target_include_directories(${UTIL_LIB} PUBLIC INTERFACE
+target_sources(${UTIL_LIB} PRIVATE
+  "src/logging.c"
+)
+
+target_include_directories(${UTIL_LIB} PUBLIC
   ${UTIL_INC_DIR}
 )

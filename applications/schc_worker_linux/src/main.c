@@ -57,6 +57,7 @@ static void sdk_timer_3_event(void *context) {
 
 // MGT callbacks.
 static void cb_mgt_processing_required(void) {
+    LOGINFO(TAG, "MGT processing is required");
     mgt_process_request = true;
 }
 
@@ -86,6 +87,8 @@ static mgt_callbacks_t mgt_callbacks = {
 };
 
 int main() {
+
+    set_log_level(LOG_LEVEL_ALL);
 
     // SDK timers initialization.
     TimerInit(&sdk_timers[0], sdk_timer_1_event);
@@ -149,9 +152,10 @@ int main() {
         if (schc_al_is_processing_required()) {
             schc_al_process_status_t schc_al_status = schc_al_process();
             if (schc_al_status != SEND_DOWN_OK && schc_al_status != SEND_DOWN_BUSY) {
-                LOGERROR(TAG, "schc_al_process critical error\n");
+                LOGERROR(TAG, "schc_al_process critical error");
             }
         }
+        fflush(stdout);
         platform_enter_low_power_ll();
     }
     printf("\n");

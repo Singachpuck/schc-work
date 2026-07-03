@@ -17,9 +17,10 @@
 #include "net/net_helper.h"
 #include "schc_al_params.h"
 #include "oscore_proxy.h"
+
 #include "logging.h"
 
-static const char *TAG = "SCHC_AL";
+static const char *TAG = "SCHC-AL";
 
 // TODO: Change to smaller
 // #define SCHC_AL_MAX_PACKET_SIZE
@@ -213,6 +214,8 @@ static void net_transmission_result(net_status_t status, uint16_t error) {
 }
 
 static int schc_al_forward_up(uint8_t *buffer, uint16_t data_size) {
+    LOGINFO(TAG, "Forwarding up");
+
     if (tun_fd < 0 || data_size == 0) {
         return -1;
     }
