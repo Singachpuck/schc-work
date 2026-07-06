@@ -1,8 +1,20 @@
+diff --git a/api/default/src/fullsdkextapi.c b/api/default/src/fullsdkextapi.c
+index abe25164..e6d688e6 100644
+--- a/api/default/src/fullsdkextapi.c
++++ b/api/default/src/fullsdkextapi.c
+@@ -17,6 +17,7 @@
+ 
+ #include "fullsdkmgt.h"
+ 
++__attribute__((weak))
+ mgt_status_t mgt_enable_extension_api(void)
+ {
+   // We do nothing.
 diff --git a/comp/CMakeLists.txt b/comp/CMakeLists.txt
-index 2e903474..f2c4c3b7 100644
+index 2e903474..c57ae621 100644
 --- a/comp/CMakeLists.txt
 +++ b/comp/CMakeLists.txt
-@@ -41,3 +41,7 @@ target_include_directories(
+@@ -41,3 +41,8 @@ target_include_directories(
  if(SCHC_CORE_MODE)
    target_compile_definitions(${FULLSDK_LIB_NAME} PUBLIC SCHC_CORE_MODE)
  endif()
@@ -10,7 +22,7 @@ index 2e903474..f2c4c3b7 100644
 +if (DEFINED RULE_ID_BITS)
 +    target_compile_definitions(${FULLSDK_LIB_NAME} PUBLIC RULE_ID_BITS=${RULE_ID_BITS})
 +endif ()
-\ No newline at end of file
++
 diff --git a/comp/src/compressor.c b/comp/src/compressor.c
 index 322948d5..f482f67e 100644
 --- a/comp/src/compressor.c
@@ -103,3 +115,38 @@ index 0e5bee78..56839305 100644
  
  # Tests
  option(RUN_UNIT_TESTS "Run the unit tests" OFF)
+diff --git a/fragapi/empty/CMakeLists.txt b/fragapi/empty/CMakeLists.txt
+new file mode 100644
+index 00000000..e6556537
+--- /dev/null
++++ b/fragapi/empty/CMakeLists.txt
+@@ -0,0 +1,5 @@
++target_sources(${FULLSDK_LIB_NAME}
++               PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src/fullsdkfragapi.c)
++
++target_include_directories(${FULLSDK_LIB_NAME}
++                           PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
+diff --git a/fragapi/empty/include/fullsdkfragapi.h b/fragapi/empty/include/fullsdkfragapi.h
+new file mode 100644
+index 00000000..df5f1270
+--- /dev/null
++++ b/fragapi/empty/include/fullsdkfragapi.h
+@@ -0,0 +1,4 @@
++#ifndef FULLSDK_FRAG_API_H
++#define FULLSDK_FRAG_API_H
++
++#endif // FULLSDK_FRAG_API_H;
+diff --git a/fragapi/empty/src/fullsdkfragapi.c b/fragapi/empty/src/fullsdkfragapi.c
+new file mode 100644
+index 00000000..a44eb375
+--- /dev/null
++++ b/fragapi/empty/src/fullsdkfragapi.c
+@@ -0,0 +1,8 @@
++#include <stddef.h>
++#include "schcfrag.h"
++
++__attribute__((weak))
++frag_profiles_t *mgt_load_profiles(void)
++{
++  return NULL;
++}
