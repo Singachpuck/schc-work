@@ -109,7 +109,7 @@ int main() {
     // Informs the SDK regarding the application mode in order to use the correct
     // fragmentation profile.
 #ifdef SCHC_CORE_MODE
-    sdk_mode = SDK_CORE_MODE;
+    sdk_mode = SDK_APP_MODE;
 #endif
 #ifdef SCHC_DEV_MODE
     sdk_mode = SDK_DEVICE_MODE;
