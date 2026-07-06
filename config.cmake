@@ -1,6 +1,6 @@
 # Default config, see profiles/
 #set(PROFILE_NAME "udp6_schc_al_oscore" CACHE STRING "Profile name.")
-set(PROFILE_NAME "ahoi_schc_al_oscore_dev" CACHE STRING "Profile name.")
+set(PROFILE_NAME "ahoi_schc_al_oscore_core" CACHE STRING "Profile name.")
 
 include("profiles/${PROFILE_NAME}/config.cmake")
 

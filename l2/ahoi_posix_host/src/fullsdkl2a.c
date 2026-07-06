@@ -151,7 +151,7 @@ consumer_status_t packet_consumer(ahoi_packet_t* pkt) {
 
 //    uint16_t pkt_size = AHOI_HEADER_SIZE + pkt->pl_size;
     if (pkt->pl_size > l2a_rx_buffer_size) {
-        l2a_cb.data_received(0, L2A_L2_ERROR);
+        l2a_cb.data_received(0, L2A_BUFFER_ERR);
         goto finish;
     }
     memcpy(l2a_rx_buffer, pkt->payload, pkt->pl_size);
@@ -169,7 +169,7 @@ static void _read_downlink(void)
     rx_status_t ret;
 
     do {
-        ret = ahoi_stateful_read(ahoifd, packet_consumer);
+        ret = ahoi_stateless_read(ahoifd, 100, packet_consumer);
     } while (ret != READ_OK && errno == EINTR);
 
     if (ret != READ_OK) {
