@@ -87,7 +87,6 @@ static mgt_callbacks_t mgt_callbacks = {
 };
 
 int main() {
-
     set_log_level(LOG_LEVEL_ALL);
 
     // SDK timers initialization.
@@ -109,7 +108,12 @@ int main() {
 
     // Informs the SDK regarding the application mode in order to use the correct
     // fragmentation profile.
-    // mgt_set_mode(SDK_DEVICE_MODE);
+#ifdef SCHC_CORE_MODE
+    sdk_mode = SDK_CORE_MODE;
+#endif
+#ifdef SCHC_DEV_MODE
+    sdk_mode = SDK_DEVICE_MODE;
+#endif
 
     mgt_status_t mgt_status = mgt_initialize(&mgt_callbacks, mgt_mem_block, MEM_BLOCK_SIZE, L2_MAX_MTU, MAX_PAYLOAD_SIZE);
     if (mgt_status != MGT_SUCCESS) {
