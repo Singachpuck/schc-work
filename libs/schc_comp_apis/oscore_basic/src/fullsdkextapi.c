@@ -25,13 +25,15 @@
 #include <fullsdkmgtpriv.h>
 #include <schccomp.h>
 
+#include "outerrules.h"
+
 uint8_t host_ipv6_addr[IPV6_ADDRESS_LENGTH_BYTES] = {0};
 uint8_t host_udp_port[IP_PORT_LENGTH_BYTES] = {0};
 
 uint8_t remote_ipv6_addr[IPV6_ADDRESS_LENGTH_BYTES] = {0};
 uint8_t remote_udp_port[IP_PORT_LENGTH_BYTES] = {0};
 
-static rules_t* get_inner_rules() {
+static const rules_t* get_inner_rules() {
   // Initialize the inner rules array.
   static rules_t rules;
   init_rules(&rules, NULL, NO_COMP_RULE_ID);
@@ -39,12 +41,16 @@ static rules_t* get_inner_rules() {
   return &rules;
 }
 
-static rules_t* get_outer_rules() {
+static const rules_t* get_outer_rules() {
+#ifdef OUTERRULES_H
+  return get_orangelabs_outer_rules();
+#else
   // Initialize the outer rules array.
   static rules_t rules;
   init_rules(&rules, NULL, NO_COMP_RULE_ID);
 
   return &rules;
+#endif
 }
 
 void net_set_host_static_ip(const char *ipv6_address)
