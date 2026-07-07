@@ -20,7 +20,6 @@ set(IO_LIB "io-lib::io-lib")
 set(ASCON_LIB "ascon-c::ascon-c")
 
 include(GNUInstallDirs)
-include(profiles/${PROFILE_NAME}/config.cmake)
 
 find_package(ahoi-module)
 find_package(ascon-c)
