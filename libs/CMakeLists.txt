@@ -16,11 +16,6 @@ set(NET_LIB ${NET_LIB} PARENT_SCOPE)
 set(NET_INC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/net/include")
 set(NET_INC_DIR ${NET_INC_DIR} PARENT_SCOPE)
 
-set(UTIL_LIB "util-lib")
-set(UTIL_LIB ${UTIL_LIB} PARENT_SCOPE)
-set(UTIL_INC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/util/include")
-set(UTIL_INC_DIR ${UTIL_INC_DIR} PARENT_SCOPE)
-
 if (WITH_COMMONS)
     add_subdirectory(commons)
 endif ()
@@ -32,10 +27,6 @@ endif ()
 add_subdirectory(net)
 set(NET_LIB ${NET_LIB} PARENT_SCOPE)
 set(NET_INC_DIR ${NET_INC_DIR} PARENT_SCOPE)
-
-add_subdirectory(util)
-set(UTIL_LIB ${UTIL_LIB} PARENT_SCOPE)
-set(UTIL_INC_DIR ${UTIL_INC_DIR} PARENT_SCOPE)
 
 if (WITH_COAP)
     set(ENABLE_DTLS OFF)
