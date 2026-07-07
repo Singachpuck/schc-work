@@ -25,6 +25,8 @@ include(profiles/${PROFILE_NAME}/config.cmake)
 find_package(ahoi-module)
 find_package(ascon-c)
 
+add_subdirectory(tools/logginglib)
+
 add_subdirectory(schc/schc-sdk-fork)
 
 # Sets APP_DIRECTORY and EXEC_NAMES
