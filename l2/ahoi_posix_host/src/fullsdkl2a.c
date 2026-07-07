@@ -151,6 +151,7 @@ consumer_status_t packet_consumer(ahoi_packet_t* pkt) {
 
 //    uint16_t pkt_size = AHOI_HEADER_SIZE + pkt->pl_size;
     if (pkt->pl_size > l2a_rx_buffer_size) {
+        LOGERROR(TAG, "Packet is too large (pl_size = %d, buffer size = %d)", pkt->pl_size, l2a_rx_buffer_size);
         l2a_cb.data_received(0, L2A_L2_ERROR);
         goto finish;
     }
