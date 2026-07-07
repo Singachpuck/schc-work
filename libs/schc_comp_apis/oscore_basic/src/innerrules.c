@@ -18,9 +18,9 @@
 #include <limits.h>
 #include <stddef.h>
 
-#include "fullsdkextapi.h"
-#include "innerrules.h"
 #include "parsercoap.h"
+#include "parserudp.h"
+#include "rule.h"
 
 #define REG_COAP_URI_PATH "rd"
 #define REG_COAP_CONTENT_FORMAT                                                \

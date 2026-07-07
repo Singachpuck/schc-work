@@ -53,8 +53,6 @@ static int run_cmd(const char *cmd) {
 static void schc_al_tun_received_handler(void) {
     event |= IP_PACKET_AVAILABLE;
     processing_required = true;
-
-    LOGINFO(TAG, "Received packet via tun, IP_PACKET_AVAILABLE event set");
 }
 
 int schc_al_init() {

@@ -3,6 +3,14 @@
 
 #include <fullsdkmgt.h>
 
+void net_set_host_static_ip(const char *ipv6_address);
+
+void net_set_host_static_port(const char *udp_port);
+
+void net_set_remote_static_ip(const char *ipv6_address);
+
+void net_set_remote_static_port(const char *udp_port);
+
 mgt_status_t mgt_ext_oscore_inner_compression(uint8_t *buf_out,
                                               uint16_t buf_out_size,
                                               uint16_t *out_data_size,

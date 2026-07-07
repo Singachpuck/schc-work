@@ -39,9 +39,14 @@ def print_message(msg, title):
 
 
 async def main():
-    uri = "coap://[2001:db9::1]:5683/"
+    uri = "coap://[2001:db9::11]:5683/"
 
-    protocol = await Context.create_client_context()
+    # protocol = await Context.create_client_context()
+
+    protocol = await Context.create_server_context(
+        site=None,
+        bind=("::", 12345)  # Bind to all IPv6 addresses on port 12345
+    )
 
     request = Message(
         code=GET,

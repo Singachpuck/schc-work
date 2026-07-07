@@ -16,6 +16,9 @@
 #cmakedefine IPv6_PREFIX_LEN ${IPv6_PREFIX_LEN}
 #cmakedefine IPv6_IID "${IPv6_IID}"
 #define IPv6_ADDR (IPv6_PREFIX IPv6_IID "/${IPv6_PREFIX_LEN}")
+#cmakedefine IPv6_PEER_PREFIX "${IPv6_PEER_PREFIX}"
+#cmakedefine IPv6_PEER_PREFIX_LEN ${IPv6_PEER_PREFIX_LEN}
+#cmakedefine IPv6_PEER_IID "${IPv6_PEER_IID}"
 #cmakedefine IPv6_MAX_PACKET_SIZE ${IPv6_MAX_PACKET_SIZE}
 
 #cmakedefine OSCORE_PROXY_ENABLED

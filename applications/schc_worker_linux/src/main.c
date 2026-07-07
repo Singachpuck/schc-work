@@ -4,6 +4,7 @@
 #include <fullsdkl2.h>
 #include <platform.h>
 
+#include "fullsdkextapi.h"
 #include "schc_al_params.h"
 #include "schc_al.h"
 
@@ -24,8 +25,8 @@ bool mgt_process_request = false;
 static uint8_t mgt_mem_block[MEM_BLOCK_SIZE];
 
 // static const char* ahoi_port = "/run/user/1000/slv_cons";
-// static const char* ahoi_port = "/run/user/1000/slv_triggered_prod";
-static const char* ahoi_port = "/dev/ttyUSB0";
+static const char* ahoi_port = "/run/user/1000/slv_triggered_prod";
+// static const char* ahoi_port = "/dev/ttyUSB0";
 
 static const uint8_t ahoi_id = 0x0A;
 
@@ -116,6 +117,11 @@ int main() {
     LOGWARN(TAG, "SDK is DEVICE!");
     sdk_mode = SDK_DEVICE_MODE;
 #endif
+
+    net_set_host_static_ip(IPv6_PREFIX IPv6_IID);
+    net_set_host_static_port("12345");
+    net_set_remote_static_ip(IPv6_PEER_PREFIX IPv6_PEER_IID);
+    net_set_remote_static_port("5683");
 
     mgt_status_t mgt_status = mgt_initialize(&mgt_callbacks, mgt_mem_block, MEM_BLOCK_SIZE, L2_MAX_MTU, MAX_PAYLOAD_SIZE);
     if (mgt_status != MGT_SUCCESS) {

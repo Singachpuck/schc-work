@@ -17,8 +17,6 @@
 
 #include <stdlib.h>
 
-#include "fullsdkextapi.h"
-#include "outerrules.h"
 #include "parsercoap.h"
 #include "parserudp.h"
 #include "rule.h"
@@ -34,6 +32,12 @@
 #define IP_UDP_RULE_ID 61
 #define EDHOC_COAP_REQUEST_RULE_ID 69
 #define EDHOC_COAP_RESPONSE_RULE_ID 70
+
+extern uint8_t host_ipv6_addr[IPV6_ADDRESS_LENGTH_BYTES];
+extern uint8_t host_udp_port[IP_PORT_LENGTH_BYTES];
+
+extern uint8_t remote_ipv6_addr[IPV6_ADDRESS_LENGTH_BYTES];
+extern uint8_t remote_udp_port[IP_PORT_LENGTH_BYTES];
 
 static void add_ip_fields(rule_t *rule)
 {
