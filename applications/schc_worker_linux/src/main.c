@@ -112,16 +112,21 @@ int main() {
 #ifdef SCHC_CORE_MODE
     LOGWARN(TAG, "SDK is APPLICATION!");
     sdk_mode = SDK_APP_MODE;
+
+    net_set_host_static_ip(IPv6_PEER_PREFIX IPv6_PEER_IID);
+    net_set_host_static_port("5683");
+    net_set_remote_static_ip(IPv6_PREFIX IPv6_IID);
+    net_set_remote_static_port("12345");
 #endif
 #ifdef SCHC_DEV_MODE
     LOGWARN(TAG, "SDK is DEVICE!");
     sdk_mode = SDK_DEVICE_MODE;
-#endif
 
     net_set_host_static_ip(IPv6_PREFIX IPv6_IID);
     net_set_host_static_port("12345");
     net_set_remote_static_ip(IPv6_PEER_PREFIX IPv6_PEER_IID);
     net_set_remote_static_port("5683");
+#endif
 
     mgt_status_t mgt_status = mgt_initialize(&mgt_callbacks, mgt_mem_block, MEM_BLOCK_SIZE, L2_MAX_MTU, MAX_PAYLOAD_SIZE);
     if (mgt_status != MGT_SUCCESS) {
