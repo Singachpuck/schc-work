@@ -196,6 +196,16 @@ bool oscore_security_context_init(uint8_t *oscore_master_secret,
             oscore_master_secret_size,
             oscore_master_secret
         },
+#ifdef SCHC_CORE_MODE
+        {
+            RECIPIENT_ID_LEN,
+            RECIPIENT_ID
+        },
+        {
+            SENDER_ID_LEN,
+            SENDER_ID
+        },
+#elifdef SCHC_DEV_MODE
         {
             SENDER_ID_LEN,
             SENDER_ID
@@ -204,6 +214,7 @@ bool oscore_security_context_init(uint8_t *oscore_master_secret,
             RECIPIENT_ID_LEN,
             RECIPIENT_ID
         },
+#endif
         {
             ID_CONTEXT_LEN,
             ID_CONTEXT
