@@ -28,11 +28,20 @@
 #include "schc_al_params.h"
 #include "oscore_proxy.h"
 
+// TODO: Just replace with separate macros
+#ifndef SCHC_PEER_MODE
 static uint8_t *SENDER_ID = NULL;
 static uint8_t SENDER_ID_LEN = 0;
 
 static uint8_t RECIPIENT_ID[1] = {0x01};
 static uint8_t RECIPIENT_ID_LEN = sizeof(RECIPIENT_ID);
+#else
+static uint8_t SENDER_ID[1] = {0x01};
+static uint8_t SENDER_ID_LEN = sizeof(SENDER_ID);
+
+static uint8_t *RECIPIENT_ID = NULL;
+static uint8_t RECIPIENT_ID_LEN = 0;
+#endif
 
 static uint8_t *ID_CONTEXT = NULL;
 static uint8_t ID_CONTEXT_LEN = 0;
@@ -169,6 +178,8 @@ static coap_oscore_res_t uoscore_err_to_res(enum err error) {
             return CO_BUFFER_ERROR;
         case not_oscore_pkt:
             return CO_NOT_OSCORE;
+        case first_request_after_reboot:
+            return CO_ECHO_ERROR;
         default:
             return CO_OSCORE_ERROR;
     }
@@ -196,16 +207,6 @@ bool oscore_security_context_init(uint8_t *oscore_master_secret,
             oscore_master_secret_size,
             oscore_master_secret
         },
-#ifdef SCHC_CORE_MODE
-        {
-            RECIPIENT_ID_LEN,
-            RECIPIENT_ID
-        },
-        {
-            SENDER_ID_LEN,
-            SENDER_ID
-        },
-#elifdef SCHC_DEV_MODE
         {
             SENDER_ID_LEN,
             SENDER_ID
@@ -214,7 +215,6 @@ bool oscore_security_context_init(uint8_t *oscore_master_secret,
             RECIPIENT_ID_LEN,
             RECIPIENT_ID
         },
-#endif
         {
             ID_CONTEXT_LEN,
             ID_CONTEXT
@@ -224,7 +224,8 @@ bool oscore_security_context_init(uint8_t *oscore_master_secret,
             oscore_master_salt
         },
         OSCORE_ASCONAEAD128_32,
-        OSCORE_ASCON_256
+        OSCORE_ASCON_256,
+        true
     };
     enum err r = oscore_context_init(&params_sender, &osc_ctx);
     if (r != ok)

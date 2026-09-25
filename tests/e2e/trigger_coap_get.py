@@ -39,7 +39,9 @@ def print_message(msg, title):
 
 
 async def main():
+    # uri = "coap://[2001:db8::11]:5683/"
     uri = "coap://[2001:db9::11]:5683/"
+    # uri = "coap://[::1]:5683/"
 
     # protocol = await Context.create_client_context()
 

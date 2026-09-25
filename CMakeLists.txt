@@ -45,6 +45,9 @@ add_subdirectory(applications/schc_worker_linux)
 
 #add_subdirectory(${SCHC_DIR})
 
-find_package(cmocka)
+if (WITH_TESTS)
 
+find_package(cmocka)
 add_subdirectory(tests)
+
+endif ()

@@ -82,6 +82,7 @@ enum err aead(enum aes_operation op, const struct byte_array *in,
             key->ptr,
             tag_len * 8
         );
+        out->len = in->len - tag_len;
     }
 
     if (st < 0) {

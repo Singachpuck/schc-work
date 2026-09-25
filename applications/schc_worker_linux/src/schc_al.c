@@ -87,7 +87,12 @@ int schc_al_init() {
         return -1;
     }
 
-    snprintf(cmd, sizeof(cmd), "ip -6 addr add %s dev %s", IPv6_ADDR, tun_name);
+#ifdef SCHC_PEER_MODE
+    const char* tun_ipv6 = IPv6_PEER_ADDR;
+#else
+    const char* tun_ipv6 = IPv6_ADDR;
+#endif
+    snprintf(cmd, sizeof(cmd), "ip -6 addr add %s dev %s", tun_ipv6, tun_name);
     if (run_cmd(cmd) != 0) {
         close(tun_fd);
         tun_fd = -1;
@@ -167,12 +172,6 @@ static schc_al_process_status_t schc_al_send_down() {
 #endif
         }
 
-        // I don't think I need to do this for the schc layer
-        // if (st == CO_SUCCESS) {
-        //     update_ip6_udp_len(net_buffer, coap_packet_len);
-        //     update_udp_checksum(net_buffer);
-        // }
-
         pkt_len = IPv6_HEADERS_BYTES + UDP_HEADERS_BYTES + oscore_len;
 #endif
     }
@@ -228,15 +227,18 @@ static int schc_al_forward_up(uint8_t *buffer, uint16_t data_size) {
     if (is_coap_packet(coap_packet, data_size)) {
 #ifdef OSCORE_PROXY_ENABLED
         // OSCORE to CoAP
-        coap_oscore_res_t st = oscore_to_coap(coap_packet, coap_packet_len, buffer, &coap_packet_len);
-        if (st != CO_NOT_OSCORE && st != CO_SUCCESS) {
-            LOGWARN(TAG, "discard invalid OSCORE packet up");
-            return -1;
-        }
-        if (st != CO_NOT_OSCORE) {
-            update_ip6_udp_len(buffer, coap_packet_len);
-            update_udp_checksum(buffer);
-            data_size = IPv6_HEADERS_BYTES + UDP_HEADERS_BYTES + coap_packet_len;
+        coap_oscore_res_t st = oscore_to_coap(coap_packet, coap_packet_len, coap_packet, &coap_packet_len);
+        switch (st) {
+            case CO_SUCCESS:
+                update_ip6_udp_len(buffer, coap_packet_len);
+                update_udp_checksum(buffer);
+                data_size = IPv6_HEADERS_BYTES + UDP_HEADERS_BYTES + coap_packet_len;
+                break;
+            case CO_NOT_OSCORE:
+                break;
+            default:
+                LOGWARN(TAG, "discard invalid OSCORE packet up");
+                return -1;
         }
 #endif
     } else {
@@ -245,6 +247,9 @@ static int schc_al_forward_up(uint8_t *buffer, uint16_t data_size) {
         return 0;
 #endif
     }
+
+    LOGINFO(TAG, "What goes to tun:");
+    PRINT_HEX_BUF(buffer, data_size);
 
     ssize_t sent_bytes = write(tun_fd, buffer, data_size);
     if (sent_bytes < 0) {
@@ -256,10 +261,17 @@ static int schc_al_forward_up(uint8_t *buffer, uint16_t data_size) {
 }
 
 static void net_data_received(const uint8_t *buffer, uint16_t data_size, net_status_t status) {
-    if (status != NET_SUCCESS) {
-        return;
+    switch (status) {
+        case NET_SUCCESS:
+            schc_al_forward_up(buffer, data_size);
+            break;
+        case NET_RULES_NOT_FOUND_ERR:
+            LOGERROR(TAG, "Rule for decompression was not found");
+            break;
+        default:
+            LOGERROR(TAG, "Unexpected net error: %d", status);
+            return;
     }
-    schc_al_forward_up(buffer, data_size);
 }
 
 static const net_callbacks_t schc_al_net_callbacks = {

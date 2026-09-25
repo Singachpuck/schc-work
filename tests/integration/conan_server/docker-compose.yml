@@ -1,0 +1,12 @@
+services:
+  conan-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        CONAN_LOGIN_USERNAME: ${CONAN_LOGIN_USERNAME}
+        CONAN_PASSWORD: ${CONAN_PASSWORD}
+    image: schc_conan_server:latest
+    container_name: schc_conan_server
+    ports:
+      - 9300:9300

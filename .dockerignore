@@ -1,0 +1,6 @@
+**/build/
+**/install/
+**/tests/
+CMakeUserPresets.json
+!tests/e2e/trigger_coap_get.py
+!tests/e2e/coap_server.py

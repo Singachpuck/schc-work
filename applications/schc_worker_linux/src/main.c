@@ -96,36 +96,43 @@ int main() {
     TimerInit(&sdk_timers[2], sdk_timer_3_event);
 
     l2_set_mtu(L2_MAX_MTU);
-    l2_set_next_tx_delay(L2_TX_DELAY);
 
 #ifdef L2_STACK_ahoi_posix_host
+    l2_set_next_tx_delay(L2_TX_DELAY);
     l2_set_serial_port(ahoi_port);
     l2_set_iid(ahoi_id);
 #endif
 
-#ifdef L2_STACK_udp6
-    // TODO:
+#ifdef L2_STACK_udp
+    l2_set_ipv4_host_addr(L2_UDP_HOST_IP);
+    l2_set_ipv4_remote_addr(L2_UDP_REMOTE_IP);
+    l2_set_udp_src_port(L2_UDP_HOST_PORT);
+    l2_set_udp_dest_port(L2_UDP_REMOTE_PORT);
 #endif
 
-    // Informs the SDK regarding the application mode in order to use the correct
-    // fragmentation profile.
-#ifdef SCHC_CORE_MODE
-    LOGWARN(TAG, "SDK is APPLICATION!");
+#ifdef L2_STACK_udp6
+    l2_set_ipv6_host_addr(L2_UDP6_HOST_IP);
+    l2_set_ipv6_remote_addr(L2_UDP6_REMOTE_IP);
+    l2_set_udp_src_port(L2_UDP6_HOST_PORT);
+    l2_set_udp_dest_port(L2_UDP6_REMOTE_PORT);
+#endif
+
+#ifdef SCHC_PEER_MODE
+    LOGWARN(TAG, "SDK is CORE!");
     sdk_mode = SDK_APP_MODE;
 
     net_set_host_static_ip(IPv6_PEER_PREFIX IPv6_PEER_IID);
-    net_set_host_static_port("5683");
+    net_set_host_static_port(UDP_PEER_PORT);
     net_set_remote_static_ip(IPv6_PREFIX IPv6_IID);
-    net_set_remote_static_port("12345");
-#endif
-#ifdef SCHC_DEV_MODE
+    net_set_remote_static_port(UDP_HOST_PORT);
+#else
     LOGWARN(TAG, "SDK is DEVICE!");
     sdk_mode = SDK_DEVICE_MODE;
 
     net_set_host_static_ip(IPv6_PREFIX IPv6_IID);
-    net_set_host_static_port("12345");
+    net_set_host_static_port(UDP_HOST_PORT);
     net_set_remote_static_ip(IPv6_PEER_PREFIX IPv6_PEER_IID);
-    net_set_remote_static_port("5683");
+    net_set_remote_static_port(UDP_PEER_PORT);
 #endif
 
     mgt_status_t mgt_status = mgt_initialize(&mgt_callbacks, mgt_mem_block, MEM_BLOCK_SIZE, L2_MAX_MTU, MAX_PAYLOAD_SIZE);
@@ -160,7 +167,7 @@ int main() {
     while (!terminate_flag) {
         if (mgt_process_request) {
             mgt_process_request = false;
-            const mgt_status_t mgt_status = mgt_process();
+            mgt_status = mgt_process();
 
             if (mgt_status != MGT_SUCCESS) {
                 LOGERROR(TAG, "Error processing SCHC packet (status %d)", mgt_status);

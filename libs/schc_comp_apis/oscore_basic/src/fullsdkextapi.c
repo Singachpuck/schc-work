@@ -115,11 +115,17 @@ mgt_status_t mgt_ext_oscore_inner_decompression(uint8_t *out_buf,
   // Retrieve inner SCHC rules.
   const rules_t *rules = get_inner_rules();
 
-  if (schc_oscore_inner_decompress(rules, out_buf, out_buf_size, out_data_size,
+  comp_status_t st;
+  if ((st = schc_oscore_inner_decompress(rules, out_buf, out_buf_size, out_data_size,
                                    (uint8_t *)in_data,
-                                   in_data_size) != COMP_SUCCESS)
+                                   in_data_size)) != COMP_SUCCESS)
   {
-    return MGT_ERROR;
+    // TODO: Consider dynamic rule ids
+    if (!(st == COMP_RULES_NOT_FOUND_ERR || in_data[0] == rules->default_rule_id)) {
+      return MGT_ERROR;
+    }
+    memcpy(out_buf, in_data + 1, in_data_size - 1);
+    *out_data_size = in_data_size - 1;
   }
 
   return MGT_SUCCESS;
