@@ -1,20 +1,3 @@
-/**
- * @file uoscore.c
- * @copyright
- * Copyright (c) 2018-2023 ACKLIO SAS
- * Copyright (c) 2024 ACTILITY SA - All Rights Reserved
- * 
- * This file is part of lab.SCHC FullSDK.
- * 
- * Use of this source code is governed by an MIT-style
- * license that can be found in the LICENSE file or at
- * https://opensource.org/licenses/MIT.
- * 
- * @author: Hadi Bereksi hadi-ilies.bereksi-reguig@ackl.io
- *
- * Modified by Dmytro Ochkas dmytro.ochkas@imt-atlantique.fr
- */
-
 #include <string.h>
 #include <stdlib.h>
 
@@ -183,17 +166,6 @@ static coap_oscore_res_t uoscore_err_to_res(enum err error) {
         default:
             return CO_OSCORE_ERROR;
     }
-}
-
-// CoAP version is 1, which is represented by 01 in the two most significant bits of the first byte.
-#define COAP_VERSION_MASK 0xC0 // 1100 0000
-#define COAP_VERSION_1    0x40 // 0100 0000
-
-bool is_coap_packet(const uint8_t* raw_coap, size_t pkt_len) {
-    if (pkt_len < 1) {
-        return false;
-    }
-    return (raw_coap[0] & COAP_VERSION_MASK) == COAP_VERSION_1;
 }
 
 bool oscore_security_context_init(uint8_t *oscore_master_secret,

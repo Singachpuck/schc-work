@@ -8,6 +8,8 @@ add_executable(${EXEC_NAME})
 
 #message(STATUS "${FULLSDK_LIB_NAME}")
 
+if (OSCORE_PROXY_ENABLED)
+
 set(OSCORE_PROXY_LIB "oscore-proxy")
 
 add_library(${OSCORE_PROXY_LIB} OBJECT
@@ -22,10 +24,17 @@ target_include_directories(${OSCORE_PROXY_LIB} PRIVATE
 )
 target_link_libraries(${OSCORE_PROXY_LIB} PRIVATE ${OSCORE_LIB})
 target_sources(${EXEC_NAME} PRIVATE
+        $<TARGET_OBJECTS:${ZCBOR_LIB}>
         $<TARGET_OBJECTS:${OSCORE_PROXY_LIB}>)
 
-# Exec
+target_link_libraries(${EXEC_NAME} PRIVATE
+        ${OSCORE_LIB}
+        ${CRYPTO_SUITE}
+)
 
+endif ()
+
+# Exec
 target_sources(${EXEC_NAME} PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/src/main.c"
         "${CMAKE_CURRENT_SOURCE_DIR}/src/schc_al.c"
@@ -33,15 +42,12 @@ target_sources(${EXEC_NAME} PRIVATE
         $<TARGET_OBJECTS:${PLATFORM_LIB}>
         $<TARGET_OBJECTS:${SCHC_COMP_EXT_API}>
         $<TARGET_OBJECTS:${SCHC_FRAG_EXT_API}>
-        $<TARGET_OBJECTS:${ZCBOR_LIB}>
 )
 target_link_libraries(${EXEC_NAME} PRIVATE
         ${FULLSDK_LIB_NAME}
         ${IO_LIB}
         ${AHOI_LIB}
         ${NET_LIB}
-        ${OSCORE_LIB}
-        ${CRYPTO_SUITE}
         ${UTIL_LIB}
 )
 target_include_directories(${EXEC_NAME} PRIVATE

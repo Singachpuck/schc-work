@@ -1,8 +1,9 @@
 # Default config, see profiles/
 #set(PROFILE_NAME "ahoi_schc_al_oscore_dev" CACHE STRING "Profile name.")
-#set(PROFILE_NAME "ahoi_schc_al_oscore_core" CACHE STRING "Profile name.")
-#set(PROFILE_NAME "udp_schc_al_oscore_dev" CACHE STRING "Profile name.")
-set(PROFILE_NAME "udp_schc_al_oscore_core" CACHE STRING "Profile name.")
+#set(PROFILE_NAME "ahoi_schc_al_na_oscore_core" CACHE STRING "Profile name.")
+set(PROFILE_NAME "udp_schc_al_aa_oscore_dev" CACHE STRING "Profile name.")
+#set(PROFILE_NAME "udp_schc_al_na_oscore_peer" CACHE STRING "Profile name.")
+#set(PROFILE_NAME "udp_schc_al_coap_dev" CACHE STRING "Profile name.")
 
 include("profiles/${PROFILE_NAME}/config.cmake")
 
@@ -21,7 +22,7 @@ set(FRAG_API_BASE "${CMAKE_CURRENT_SOURCE_DIR}/libs/schc_frag_apis" CACHE STRING
 set(EXTENSION_API "default" CACHE STRING "")
 set(RULE_ID_BITS 8 CACHE STRING "")
 
-set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/install/${CMAKE_BUILD_TYPE}" CACHE PATH "")
+set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/install/${APP_NAME}/${CMAKE_BUILD_TYPE}" CACHE PATH "")
 
 #set(APP_NAME "schc_worker_linux" CACHE STRING "" )
 #set(SCHC_COMP_EXT_API "oscore_basic" CACHE STRING "" )

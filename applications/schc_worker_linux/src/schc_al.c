@@ -16,7 +16,9 @@
 #include "net/udp.h"
 #include "net/net_helper.h"
 #include "schc_al_params.h"
+#ifdef OSCORE_PROXY_ENABLED
 #include "oscore_proxy.h"
+#endif
 
 #include "logging.h"
 
@@ -38,8 +40,6 @@ static enum {
 static int tun_fd = -1;
 static char tun_name[IFNAMSIZ] = "";
 static uint8_t net_buffer[IPv6_MAX_PACKET_SIZE];
-// static uint8_t uplink_buffer[SCHC_AL_MAX_PACKET_SIZE];
-// static uint16_t uplink_size = 0;
 
 static int run_cmd(const char *cmd) {
     const int rc = system(cmd);
@@ -61,12 +61,14 @@ int schc_al_init() {
 
     LOGINFO(TAG, "Initializing SCHC adaptation layer");
 
+#ifdef OSCORE_PROXY_ENABLED
     // For now encoded in ascii
     if (!oscore_security_context_init((uint8_t*) OSCORE_MASTER_SECRET, OSCORE_MASTER_SECRET_LEN,
         (uint8_t*) OSCORE_MASTER_SALT, OSCORE_MASTER_SALT_LEN)) {
       LOGERROR(TAG, "Failed to create OSCORE secutiry context");  
       return -1;
     }
+#endif
 
     if (tun_fd >= 0) {
         return 0;
@@ -173,6 +175,10 @@ static schc_al_process_status_t schc_al_send_down() {
         }
 
         pkt_len = IPv6_HEADERS_BYTES + UDP_HEADERS_BYTES + oscore_len;
+        // Necessary in case no comp rule is applied
+        // Maybe there is a better solution
+        update_ip6_udp_len(net_buffer, oscore_len);
+        update_udp_checksum(net_buffer);
 #endif
     }
 

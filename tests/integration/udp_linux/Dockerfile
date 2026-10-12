@@ -21,9 +21,11 @@ COPY . .
 
 ARG MODE
 ARG L2_UDP_REMOTE_IP
+ARG OSCORE=oscore
+ARG FRAG_PROFILE=ae
 
 RUN cmake -S . -B build/Release -G "Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE=generators/conan_toolchain.cmake \
-    -DCMAKE_POLICY_DEFAULT_CMP0091=NEW -DCMAKE_BUILD_TYPE=Release -DWITH_TESTS=OFF -DPROFILE_NAME=udp_schc_al_oscore_$MODE \
+    -DCMAKE_POLICY_DEFAULT_CMP0091=NEW -DCMAKE_BUILD_TYPE=Release -DWITH_TESTS=OFF -DPROFILE_NAME=udp_schc_al_${FRAG_PROFILE}_${OSCORE}_${MODE} \
     -DL2_UDP_REMOTE_IP=$L2_UDP_REMOTE_IP \
     -DCMAKE_INSTALL_PREFIX=/install && \
     cmake --build build/Release && \

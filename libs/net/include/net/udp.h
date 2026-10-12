@@ -12,5 +12,6 @@ uint16_t udp_checksum(const uint8_t *packet, size_t size,
 void update_udp_checksum(uint8_t *packet);
 void update_ip6_udp_len(uint8_t *packet, size_t payload_size);
 uint16_t ipv6_udp_payload_len(const uint8_t *packet);
+bool is_coap_packet(const uint8_t* raw_coap, size_t pkt_len);
 
 #endif // UDP_H

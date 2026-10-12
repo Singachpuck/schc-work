@@ -16,8 +16,6 @@ typedef enum
     CO_UNKNOWN_SESSION,
 } coap_oscore_res_t;
 
-bool is_coap_packet(const uint8_t* raw_coap, size_t pkt_len);
-
 bool oscore_security_context_init(uint8_t *oscore_master_secret,
                                 uint16_t oscore_master_secret_size, uint8_t *oscore_master_salt,
                                 uint16_t oscore_master_salt_size);
