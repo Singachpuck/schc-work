@@ -26,7 +26,7 @@
 MGT_SCHC_ACK_PACKET_SIZE * 3u + 64 * 2u)
 
 bool mgt_process_request = false;
-bool volatile terminate = false;
+bool volatile terminate_flag = false;
 static uint8_t mgt_mem_block[MEM_BLOCK_SIZE];
 
 //static const char* ahoi_port = "/run/user/1000/slv_cons";
@@ -100,7 +100,7 @@ static void net_data_received(const uint8_t *buffer, uint16_t data_size,
 
 //    app_process_request = true;
 //    app_send_data_request = true;
-    terminate = true;
+    terminate_flag = true;
 }
 
 static net_callbacks_t net_callbacks = {
@@ -137,7 +137,7 @@ void test_ahoi_l2(void** state) {
     }
 
     bool app_send_data_request = true;
-    while (!terminate) {
+    while (!terminate_flag) {
         if (mgt_process_request) {
             mgt_process_request = false;
             const mgt_status_t mgt_status = mgt_process();

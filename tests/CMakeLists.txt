@@ -44,7 +44,7 @@ set(FULLSDK_LIB_NAME fullsdk CACHE STRING "Library's name" FORCE)
 set(TRACE_ENABLED OFF CACHE STRING "Trace" FORCE)
 set(RULEPARSER_MEM_TOOL OFF CACHE BOOL "Enables the compilation of a tool to display a summary of the rules parsed by the ruleparser module" FORCE)
 set(PERF_MEASURE_ENABLED OFF CACHE BOOL "Enables the performance measurement API which allows measuring the number of CPU instructions used between 2 points in the code" FORCE)
-set(RULE_ID_BITS 4 CACHE STRING "Size of rule IDs. Max 16" FORCE)
+set(RULE_ID_BITS 8 CACHE STRING "Size of rule IDs. Max 16" FORCE)
 
 ##############################
 

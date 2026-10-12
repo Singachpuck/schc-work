@@ -7,21 +7,27 @@
 
 #include <ahoi-module.h>
 
+#include "logging.h"
+
+static const char *TAG = "L2A";
+
+#define RX_BUFFER_SIZE (AHOI_MAX_ENCODED_SIZE * 4u)
+
 // L2 technology. It can be overriden by the application.
 l2a_technology_t l2a_technology = L2A_DEFAULT;
 
 // L2 MTU. It can be overriden by the application.
 static uint16_t l2_mtu = AHOI_MAX_PAYLOAD_SIZE;
-
-#define AHOI_MAX_ENCODED_SIZE ((127 + 6) * 2 + 4)
+// Delay between transmissions, default 300
+static uint32_t l2_tx_delay_ms = 300;
 
 static const char* ahoi_port = "/dev/ttyUSB0";
-static uint8_t iid = 1;
+static uint8_t iid = 0x01;
 
 static l2a_callbacks_t l2a_cb;
 static uint8_t *l2a_rx_buffer;
 static uint16_t l2a_rx_buffer_size;
-static int ahoifd;
+static int ahoifd = -1;
 
 static enum {
     NO_EVENT = 0,
@@ -30,7 +36,7 @@ static enum {
     DOWNLINK_AVAILABLE_EVENT = 1 << 2,
 } event;
 
-static uint8_t phy_rx_buffer[AHOI_MAX_ENCODED_SIZE];
+static uint8_t phy_rx_buffer[RX_BUFFER_SIZE];
 
 void l2_set_mtu(uint16_t mtu)
 {
@@ -45,6 +51,10 @@ void l2_set_iid(uint8_t val) {
     iid = val;
 }
 
+void l2_set_next_tx_delay(uint32_t tx_delay_ms) {
+    l2_tx_delay_ms = tx_delay_ms;
+}
+
 static void _downlink_available_callback(void)
 {
     event |= DOWNLINK_AVAILABLE_EVENT;
@@ -55,7 +65,7 @@ l2a_status_t l2a_initialize(const l2a_callbacks_t *pp_callbacks,
                             uint8_t *p_receive_buffer,
                             uint16_t receive_buffer_size)
 {
-    printf("l2a>l2a_initialized() called\n");
+    LOGINFO(TAG, "Initializing L2A");
     l2a_cb = *pp_callbacks;
 
     ahoi_init_t ahoi_init = {
@@ -63,7 +73,7 @@ l2a_status_t l2a_initialize(const l2a_callbacks_t *pp_callbacks,
             .baud = B115200,
             .id = iid,
             .recv_buf = phy_rx_buffer,
-            .recv_buf_len = AHOI_MAX_ENCODED_SIZE
+            .recv_buf_len = sizeof(phy_rx_buffer)
     };
     l2a_rx_buffer = p_receive_buffer;
     l2a_rx_buffer_size = receive_buffer_size;
@@ -71,6 +81,7 @@ l2a_status_t l2a_initialize(const l2a_callbacks_t *pp_callbacks,
     event = NO_EVENT;
 
     if (ahoi_connect(&ahoi_init, 1, &ahoifd) < 0) {
+        LOGERROR(TAG, "Failed to connect to ahoi");
         return L2A_CONNECT_ERR;
     }
 
@@ -80,7 +91,7 @@ l2a_status_t l2a_initialize(const l2a_callbacks_t *pp_callbacks,
 
     if (!watch_fd_for_input(ahoifd, &_downlink_available_callback))
     {
-        printf("l2a>watch_fd_for_input() failed\n");
+        LOGERROR(TAG, "watch_fd_for_input() failed");
         return L2A_CONNECT_ERR;
     }
     return L2A_SUCCESS;
@@ -90,7 +101,7 @@ l2a_status_t l2a_send_data(const uint8_t *p_data, uint16_t data_size)
 {
     int ret;
 
-    printf("l2a>l2a_send_data() called\n");
+    LOGINFO(TAG, "l2a_send_data() called");
     PRINT_HEX_BUF(p_data, data_size);
 
     ahoi_header_t hdr = {
@@ -122,7 +133,7 @@ l2a_technology_t l2a_get_technology(void)
 
 uint16_t l2a_get_mtu(void)
 {
-    printf("l2a>l2a_get_mtu() called\n");
+    LOGINFO(TAG, "l2a_get_mtu() called");
 
     return l2_mtu;
 }
@@ -130,10 +141,9 @@ uint16_t l2a_get_mtu(void)
 uint32_t l2a_get_next_tx_delay(uint16_t data_size)
 {
     (void)data_size;
-    printf("l2a>l2a_get_next_tx_delay() called\n");
+    LOGINFO(TAG, "l2a_get_next_tx_delay() called");
 
-    // Return 500ms delay.
-    return 500;
+    return l2_tx_delay_ms;
 }
 
 consumer_status_t packet_consumer(ahoi_packet_t* pkt) {
@@ -141,12 +151,13 @@ consumer_status_t packet_consumer(ahoi_packet_t* pkt) {
 
 //    uint16_t pkt_size = AHOI_HEADER_SIZE + pkt->pl_size;
     if (pkt->pl_size > l2a_rx_buffer_size) {
-        l2a_cb.data_received(0, L2A_L2_ERROR);
+        LOGERROR(TAG, "Packet is too large (pl_size = %d, buffer size = %d)", pkt->pl_size, l2a_rx_buffer_size);
+        l2a_cb.data_received(0, L2A_BUFFER_ERR);
         goto finish;
     }
     memcpy(l2a_rx_buffer, pkt->payload, pkt->pl_size);
 
-    printf("l2a>rx packet received\n");
+    LOGINFO(TAG, "Received packet");
     PRINT_HEX_BUF(l2a_rx_buffer, pkt->pl_size);
     l2a_cb.data_received(pkt->pl_size, L2A_SUCCESS);
 
@@ -159,7 +170,7 @@ static void _read_downlink(void)
     rx_status_t ret;
 
     do {
-        ret = ahoi_stateful_read(ahoifd, packet_consumer);
+        ret = ahoi_stateless_read(ahoifd, 100, packet_consumer);
     } while (ret != READ_OK && errno == EINTR);
 
     if (ret != READ_OK) {
@@ -169,7 +180,7 @@ static void _read_downlink(void)
 
 l2a_status_t l2a_process(void)
 {
-    printf("l2a>l2a_process() called\n");
+    LOGINFO(TAG, "l2a_process() called");
     if (event & CONNECTIVITY_AVAILABLE_EVENT)
         l2a_cb.connectivity_available();
     if (event & TRANSMISSION_RESULT_EVENT)
@@ -187,6 +198,7 @@ bool l2a_get_dev_iid(uint8_t **dev_iid)
 }
 
 void l2_deinit() {
+    LOGINFO(TAG, "Deinitializing ahoi");
     if (ahoifd >= 0) {
         ahoi_disconnect(ahoifd);
     }

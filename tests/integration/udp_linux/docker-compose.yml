@@ -1,0 +1,52 @@
+services:
+  schc_worker_dev:
+    build:
+      context: ../../../
+      dockerfile: tests/integration/udp_linux/Dockerfile
+      extra_hosts:
+        - "host.docker.internal:host-gateway"
+      args:
+        MODE: dev
+        L2_UDP_REMOTE_IP: ${L2_PEER_ADDR}
+    image: schc_worker_dev:latest
+    container_name: schc_worker_dev
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    networks:
+      schc_net:
+        ipv4_address: ${L2_DEV_ADDR}
+
+  schc_worker_peer:
+    build:
+      context: ../../../
+      dockerfile: tests/integration/udp_linux/Dockerfile
+      extra_hosts:
+        - "host.docker.internal:host-gateway"
+      args:
+        MODE: peer
+        L2_UDP_REMOTE_IP: ${L2_DEV_ADDR}
+    entrypoint:
+      - sh
+      - -c
+      - python3 -u coap_server.py &
+        exec schc-worker-linux
+    image: schc_worker_peer:latest
+    container_name: schc_worker_peer
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    networks:
+      schc_net:
+        ipv4_address: ${L2_PEER_ADDR}
+
+networks:
+  schc_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: ${L2_SUBNET}

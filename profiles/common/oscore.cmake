@@ -1,0 +1,1 @@
+option(OSCORE_PROXY_ENABLED "OSCORE enabled or not" ON)

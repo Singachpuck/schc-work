@@ -274,9 +274,9 @@ void platform_enter_low_power_ll(void)
     fds[nbr_fds].fd = _watched_fds[nbr_fds].fd;
     fds[nbr_fds].events = POLLIN;
   }
-  ret = poll(fds, nbr_fds, 400); // -1 for blocking poll()
-  if (ret <= 0)
-  {
+  // TODO: Make a configurable parameter
+  ret = poll(fds, nbr_fds, 100); // -1 for blocking poll()
+  if (ret <= 0) {
     if (ret == -1 && errno != EINTR)
       fprintf(stderr, "Error: poll() failed\n");
     return;

@@ -1,0 +1,58 @@
+#ifndef SCHC_WORKER_PARAMS_H
+#define SCHC_WORKER_PARAMS_H
+
+#define L2_STACK_${L2_STACK}
+
+#cmakedefine L2_ADDR "${L2_ADDR}"
+#cmakedefine L2_MAX_MTU ${L2_MAX_MTU}
+#cmakedefine L2_TX_DELAY ${L2_TX_DELAY}
+
+#cmakedefine L2_UDP6_HOST_IP "${L2_UDP6_HOST_IP}"
+#cmakedefine L2_UDP6_REMOTE_IP "${L2_UDP6_REMOTE_IP}"
+#cmakedefine L2_UDP6_HOST_PORT "${L2_UDP6_HOST_PORT}"
+#cmakedefine L2_UDP6_REMOTE_PORT "${L2_UDP6_REMOTE_PORT}"
+
+#cmakedefine L2_UDP_HOST_IP "${L2_UDP_HOST_IP}"
+#cmakedefine L2_UDP_REMOTE_IP "${L2_UDP_REMOTE_IP}"
+#cmakedefine L2_UDP_HOST_PORT "${L2_UDP_HOST_PORT}"
+#cmakedefine L2_UDP_REMOTE_PORT "${L2_UDP_REMOTE_PORT}"
+
+#cmakedefine SCHC_CORE_MODE
+#cmakedefine SCHC_PEER_MODE
+#cmakedefine SCHC_DEV_MODE
+
+#cmakedefine TUN_NAME "${TUN_NAME}"
+
+#cmakedefine IPv6_PREFIX "${IPv6_PREFIX}"
+#cmakedefine IPv6_PREFIX_LEN ${IPv6_PREFIX_LEN}
+#cmakedefine IPv6_IID "${IPv6_IID}"
+#if defined(IPv6_PREFIX) && defined(IPv6_PREFIX_LEN) && defined(IPv6_IID)
+#define IPv6_ADDR (IPv6_PREFIX IPv6_IID "/${IPv6_PREFIX_LEN}")
+#endif
+#cmakedefine IPv6_PEER_PREFIX "${IPv6_PEER_PREFIX}"
+#cmakedefine IPv6_PEER_PREFIX_LEN ${IPv6_PEER_PREFIX_LEN}
+#cmakedefine IPv6_PEER_IID "${IPv6_PEER_IID}"
+#if defined(IPv6_PEER_PREFIX) && defined(IPv6_PEER_IID) && defined(IPv6_PEER_PREFIX_LEN)
+#define IPv6_PEER_ADDR (IPv6_PEER_PREFIX IPv6_PEER_IID "/${IPv6_PEER_PREFIX_LEN}")
+#endif
+#cmakedefine IPv6_MAX_PACKET_SIZE ${IPv6_MAX_PACKET_SIZE}
+#cmakedefine UDP_HOST_PORT "${UDP_HOST_PORT}"
+#cmakedefine UDP_PEER_PORT "${UDP_PEER_PORT}"
+
+#cmakedefine OSCORE_PROXY_ENABLED
+#cmakedefine REGULAR_COMP
+#cmakedefine OSCORE_INNER_MAX_SIZE ${OSCORE_INNER_MAX_SIZE}
+#cmakedefine DROP_NON_COAP
+#cmakedefine OSCORE_DROP_ON_ERROR
+
+// #cmakedefine OSCORE_MASTER_SECRET "${OSCORE_MASTER_SECRET}"
+#define OSCORE_MASTER_SECRET "0102030405060708090a0b0c0d0e0f10"
+#define OSCORE_MASTER_SECRET_LEN 16
+
+// #cmakedefine OSCORE_MASTER_SALT "${OSCORE_MASTER_SALT}"
+#define OSCORE_MASTER_SALT "9e7ca92223786340"
+#define OSCORE_MASTER_SALT_LEN 16
+
+#cmakedefine NVM_FILENAME "${NVM_FILENAME}"
+
+#endif

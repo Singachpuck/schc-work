@@ -8,3 +8,6 @@
 [submodule "schc/schc-sdk-fork"]
 	path = schc/schc-sdk-fork
 	url = git@gitlab.com:lab-schc/sdk/full-sdk.git
+[submodule "libs/external/uoscore"]
+	path = libs/external/uoscore
+	url = https://github.com/eriptic/uoscore-uedhoc.git

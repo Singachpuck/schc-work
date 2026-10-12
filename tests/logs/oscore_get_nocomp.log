@@ -1,0 +1,90 @@
+coap2oscore***************************************
+Input CoAP packet (size 6):
+	42 01 5A BD DA 52
+Plain text (size 1):
+	01
+------------- Plaintext ------------
+Buf(1):01
+------------- Inner compressed packet ------------
+Buf(2):1c01
+nonce input A (size 13):
+	00 00 00 00 00 00 00 00 00 00 00 00 A7
+nonce input B (size 13):
+	DE D3 F6 E7 FA CA 8B 93 29 10 8D 4F F4
+nonce (size 13):
+	DE D3 F6 E7 FA CA 8B 93 29 10 8D 4F 53
+OSCORE option value (size 2):
+	09 A7
+request_piv (size 1):
+	A7
+request_kid (size 0):
+AAD (size 10):
+	9F 01 9F 0A FF 40 41 A7 40 FF
+aad enc structure (size 23):
+	9F 68 45 6E 63 72 79 70 74 30 40 4A 9F 01 9F 0A
+	FF 40 41 A7 40 FF FF
+tag (size 8):
+	8C 95 D9 8D 92 C6 37 95
+Ciphertext (size 2):
+	5E 37
+Ciphertext + tag (size 10):
+	5E 37 8C 95 D9 8D 92 C6 37 95
+set record:
+record 00:
+   type     : 0
+   uri paths: 2f
+   token    : da 52
+   req_piv  : a7
+   req_kid  :
+   occupied : true
+record 01:
+   type     : 0
+   uri paths:
+   token    :
+   req_piv  :
+   req_kid  :
+   occupied : false
+record 02:
+   type     : 0
+   uri paths: 
+   token    :
+   req_piv  :
+   req_kid  :
+   occupied : false
+Byte string of the converted packet (size 20):
+	42 02 5A BD DA 52 92 09 A7 FF 5E 37 8C 95 D9 8D
+	92 C6 37 95
+Before fragmentation
+Buf(68):600ee755000e114020010db800000000000000000000000120010db9000000000000000000000001dc241633000e3af442025abdda529209a7ff5e378c95d98d92c63795
+l2a>l2a_get_mtu() called
+l2a>l2a_get_mtu() called
+l2a>l2a_get_mtu() called
+l2a>l2a_get_mtu() called
+l2a>l2a_send_data() called
+Buf(20):19438c01dceaa001c228040021b7000000000000
+l2a>l2a_process() called
+l2a>l2a_get_next_tx_delay() called
+l2a>l2a_get_mtu() called
+l2a>l2a_get_mtu() called
+l2a>l2a_get_mtu() called
+Signal: SIGUSR1 (User defined signal 1)
+l2a>l2a_send_data() called
+Buf(20):1940000000000004800436e40000000000000000
+l2a>l2a_process() called
+l2a>l2a_get_next_tx_delay() called
+l2a>l2a_get_mtu() called
+l2a>l2a_get_mtu() called
+l2a>l2a_get_mtu() called
+Signal: SIGUSR1 (User defined signal 1)
+l2a>l2a_send_data() called
+Buf(20):1940000000ee120b1980071d7a21012d5eed2949
+l2a>l2a_process() called
+l2a>l2a_get_next_tx_delay() called
+l2a>l2a_get_mtu() called
+l2a>l2a_get_mtu() called
+Signal: SIGUSR1 (User defined signal 1)
+l2a>l2a_send_data() called
+Buf(19):19756feb52009a7ff5e378c95d98d92c637950
+l2a>l2a_process() called
+l2a>l2a_get_next_tx_delay() called
+schc_al>transmission success (status 0)

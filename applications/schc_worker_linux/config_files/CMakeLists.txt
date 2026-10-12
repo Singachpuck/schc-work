@@ -1,0 +1,1 @@
+configure_file(schc_al_params.h.in ${CMAKE_CURRENT_BINARY_DIR}/schc_al_params.h)

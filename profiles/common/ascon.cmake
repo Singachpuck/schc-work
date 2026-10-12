@@ -1,0 +1,1 @@
+set(CRYPTO_LIB "ascon-c")
